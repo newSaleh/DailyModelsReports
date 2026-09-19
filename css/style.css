@@ -250,9 +250,9 @@ textarea {
 /* أعمدة الجدول بالترتيب: # / الموديل / الاسم / السعر / المورد / الإجمالي / 5 فروع */
 .p-table th:nth-child(2), .p-table td:nth-child(2) { width: 11%; }
 .p-table th:nth-child(3), .p-table td:nth-child(3) { width: 10%; }
-.p-table th:nth-child(4), .p-table td:nth-child(4) { width: 9%; }
-.p-table th:nth-child(5), .p-table td:nth-child(5) { width: 12.5%; }
-.p-table th:nth-child(6), .p-table td:nth-child(6) { width: 11%; }
+.p-table th:nth-child(4), .p-table td:nth-child(4) { width: 6.5%; }
+.p-table th:nth-child(5), .p-table td:nth-child(5) { width: 17.5%; }
+.p-table th:nth-child(6), .p-table td:nth-child(6) { width: 8.5%; }
 .p-table th:nth-child(n+7), .p-table td:nth-child(n+7) { width: 8.6%; }
 
 .p-table tbody tr { break-inside: avoid; page-break-inside: avoid; }
