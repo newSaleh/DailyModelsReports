@@ -94,6 +94,13 @@ App.dateInputToDisplay = function (isoStr) {
   return parts[2] + '/' + parts[1] + '/' + parts[0];
 };
 
+// توحيد كود المورد للمطابقة مع App.SUPPLIER_ALIASES: إزالة المسافات، تحويل
+// لحروف كبيرة، وحذف الأصفار البادئة (0101 و101 يعتبران نفس الكود)
+App.normalizeSupplierCode = function (v) {
+  if (v === null || v === undefined) return '';
+  return String(v).trim().toUpperCase().replace(/^0+(?=[0-9A-Z])/, '');
+};
+
 App.escapeHtml = function (v) {
   return String(v === undefined || v === null ? '' : v)
     .replace(/&/g, '&amp;')

@@ -131,7 +131,10 @@ App.analyze = function (rows2D, options) {
       agg.branchSales[k] = (agg.branchSales[k] || 0) + rowBranchSales[k];
     });
 
-    var supplierGroupKey = supplierName || supplierCode;
+    // الاسم المختصر من قائمة الأسماء البديلة (حسب كود المورد) له الأولوية؛
+    // وإلا يُستخدم اسم المورد كما ورد في البيانات، ثم الكود نفسه كحل أخير
+    var supplierAlias = supplierCode ? App.SUPPLIER_ALIASES[App.normalizeSupplierCode(supplierCode)] : undefined;
+    var supplierGroupKey = supplierAlias || supplierName || supplierCode;
     if (supplierGroupKey) {
       if (!agg.supplierGroups[supplierGroupKey]) agg.supplierGroups[supplierGroupKey] = { qty: 0, codes: {} };
       agg.supplierGroups[supplierGroupKey].qty += rowQtyTotal;
