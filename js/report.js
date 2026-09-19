@@ -2,20 +2,19 @@ window.App = window.App || {};
 
 App.DIVIDER = '⸻';
 
-function branchLine(branch, value, unit, formatter) {
+function branchLine(branch, value) {
   var text = (value === undefined || value === null || Math.abs(value) < 0.005)
     ? App.MODEL_NOT_FOUND_LABEL
-    : formatter(value) + ' ' + unit;
+    : App.formatInt(value) + ' حبة';
   return branch.name + ': ' + text;
 }
 
-// يرتّب الفروع لموديل واحد من الأكثر مبيعًا إلى الأقل (بحسب الكمية أو مبلغ
-// البيع حسب نوع التقرير)، مع بقاء المتساوي منها (ومنه غير الموجود) بترتيبه
-// الجغرافي الأصلي كحل افتراضي مستقر
-function sortedBranchesForItem(item, mode) {
-  var values = mode === 'qty' ? item.branchQty : item.branchSales;
+// يرتّب الفروع لموديل واحد من الأكثر مبيعًا إلى الأقل بحسب الكمية (تفصيل
+// الفروع يُعرض دائمًا بالكمية حتى في تقرير مبلغ البيع)، مع بقاء المتساوي
+// منها (ومنه غير الموجود) بترتيبه الجغرافي الأصلي كحل افتراضي مستقر
+function sortedBranchesForItem(item) {
   return App.BRANCHES.slice().sort(function (a, b) {
-    return (values[b.key] || 0) - (values[a.key] || 0);
+    return (item.branchQty[b.key] || 0) - (item.branchQty[a.key] || 0);
   });
 }
 
@@ -38,12 +37,8 @@ function buildEntry(item, index, mode) {
   lines.push(App.DIVIDER);
   lines.push('');
 
-  sortedBranchesForItem(item, mode).forEach(function (b) {
-    if (mode === 'qty') {
-      lines.push(branchLine(b, item.branchQty[b.key], 'حبة', App.formatInt));
-    } else {
-      lines.push(branchLine(b, item.branchSales[b.key], 'ريال', App.formatMoney));
-    }
+  sortedBranchesForItem(item).forEach(function (b) {
+    lines.push(branchLine(b, item.branchQty[b.key]));
   });
 
   return lines.join('\n');
@@ -85,10 +80,11 @@ App.buildReportText = function (list, mode, dateDisplay) {
 function buildTableRowHtml(item, index, mode) {
   var totalText = mode === 'qty' ? App.formatInt(item.totalQty) : App.formatMoney(item.totalSales);
 
+  // تفصيل الفروع بالكمية دائمًا، حتى في تقرير مبلغ البيع
   var branchCells = App.BRANCHES.map(function (b) {
-    var value = mode === 'qty' ? item.branchQty[b.key] : item.branchSales[b.key];
+    var value = item.branchQty[b.key];
     var found = !(value === undefined || value === null || Math.abs(value) < 0.005);
-    var text = found ? (mode === 'qty' ? App.formatInt(value) : App.formatMoney(value)) : App.MODEL_NOT_FOUND_LABEL;
+    var text = found ? App.formatInt(value) : App.MODEL_NOT_FOUND_LABEL;
     return '<td class="p-td-num' + (found ? '' : ' p-td-empty') + '">' + App.escapeHtml(text) + '</td>';
   }).join('');
 
@@ -116,7 +112,9 @@ App.buildReportHTML = function (list, mode, dateDisplay) {
   }
 
   var rows = list.map(function (item, i) { return buildTableRowHtml(item, i, mode); }).join('');
-  var branchHeaders = App.BRANCHES.map(function (b) { return '<th>' + App.escapeHtml(b.name) + '</th>'; }).join('');
+  // في تقرير المبلغ يُضاف "(حبة)" لتوضيح أن أعمدة الفروع كمية وليست مبلغًا
+  var branchSuffix = mode === 'sales' ? ' (حبة)' : '';
+  var branchHeaders = App.BRANCHES.map(function (b) { return '<th>' + App.escapeHtml(b.name + branchSuffix) + '</th>'; }).join('');
 
   return '' +
     '<h1 class="p-title">' + App.escapeHtml(title) + '</h1>' +

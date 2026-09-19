@@ -39,7 +39,6 @@ App.analyze = function (rows2D, options) {
         totalQty: 0,
         totalSales: 0,
         branchQty: {},
-        branchSales: {},
         modelNameCounts: {},
         categoryCounts: {},
         priceCounts: {},
@@ -47,7 +46,7 @@ App.analyze = function (rows2D, options) {
         // إن لم يوجد كود) -> { qty, codes: {code: true}, nameQty: {name: qty} }
         supplierGroups: {},
       };
-      App.BRANCHES.forEach(function (b) { models[modelKey].branchQty[b.key] = 0; models[modelKey].branchSales[b.key] = 0; });
+      App.BRANCHES.forEach(function (b) { models[modelKey].branchQty[b.key] = 0; });
     }
     return models[modelKey];
   }
@@ -114,23 +113,11 @@ App.analyze = function (rows2D, options) {
       rowSalesTotal = 0;
     }
 
-    var rowBranchSales = {};
-    Object.keys(rowBranchQty).forEach(function (k) {
-      if (unitPrice !== null) {
-        rowBranchSales[k] = rowBranchQty[k] * unitPrice;
-      } else if (explicitSales !== null && rowQtyTotal > 0) {
-        rowBranchSales[k] = rowSalesTotal * (rowBranchQty[k] / rowQtyTotal);
-      } else {
-        rowBranchSales[k] = 0;
-      }
-    });
-
     // ---- التجميع ----
     agg.totalQty += rowQtyTotal;
     agg.totalSales += rowSalesTotal;
     Object.keys(rowBranchQty).forEach(function (k) {
       agg.branchQty[k] = (agg.branchQty[k] || 0) + rowBranchQty[k];
-      agg.branchSales[k] = (agg.branchSales[k] || 0) + rowBranchSales[k];
     });
 
     // مجموعة المورد: كودان لنفس المورد (فرع رياض/جدة، أو أي كودين يتشاركان
@@ -203,7 +190,6 @@ App.analyze = function (rows2D, options) {
       totalQty: agg.totalQty,
       totalSales: agg.totalSales,
       branchQty: agg.branchQty,
-      branchSales: agg.branchSales,
     };
   });
 
