@@ -257,4 +257,10 @@ textarea {
 
 .p-table tbody tr { break-inside: avoid; page-break-inside: avoid; }
 
+.p-notes-list {
+  margin: 0;
+  padding-inline-start: 18px;
+}
+.p-notes-list li { margin-bottom: 6px; }
+
 .p-empty { font-style: italic; }

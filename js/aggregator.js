@@ -196,9 +196,49 @@ App.analyze = function (rows2D, options) {
   var qtyList = finalModels.slice().sort(function (a, b) { return b.totalQty - a.totalQty; }).slice(0, 20);
   var salesList = finalModels.slice().sort(function (a, b) { return b.totalSales - a.totalSales; }).slice(0, 20);
 
+  // ---- ملاحظات: تُبنى فقط للموديلات الظاهرة فعليًا في التقريرين، لتشرح
+  // مباشرة أي شيء غريب يراه المستخدم (سعر غير موحّد، اسم مختلف، كود مرتبط
+  // بأكثر من مورد فعليًا) بدل عيّنة عامة من كل قاعدة البيانات
+  var visibleKeys = {};
+  qtyList.concat(salesList).forEach(function (m) { visibleKeys[m.modelCode.toUpperCase()] = true; });
+
+  var notes = [];
+  notes.push('إجمالي السجلات المقروءة: ' + App.formatInt(dataRows.length) + ' — عدد الموديلات بعد الدمج: ' + App.formatInt(modelKeys.length) + '.');
+
+  Object.keys(visibleKeys).sort().forEach(function (key) {
+    var agg = models[key];
+    var flags = [];
+
+    var prices = Object.keys(agg.priceCounts).map(Number).filter(function (p) { return p > 0; }).sort(function (a, b) { return a - b; });
+    if (prices.length > 1) {
+      flags.push('اختلاف السعر (' + prices.length + ' سعر مختلف): ' + prices.map(App.formatMoney).join(' / ') + ' ريال — غالبًا بسبب اختلاف المقاس/اللون بين قطع الموديل نفسه.');
+    }
+
+    var names = Object.keys(agg.modelNameCounts);
+    if (names.length > 1) {
+      flags.push('اختلاف اسم الموديل بين السجلات: ' + names.join(' / ') + '.');
+    }
+
+    var groupKeys = Object.keys(agg.supplierGroups);
+    if (groupKeys.length > 1) {
+      var groupDescriptions = groupKeys.map(function (gk) {
+        var g = agg.supplierGroups[gk];
+        var nameCands = Object.keys(g.nameQty).sort(function (a, b) { return g.nameQty[b] - g.nameQty[a]; });
+        var codes = Object.keys(g.codes).sort();
+        return (nameCands[0] || '؟') + (codes.length ? ' (' + codes.join('/') + ')' : '');
+      });
+      flags.push('هذا الكود مرتبط بأكثر من مورد مختلف فعليًا، فقد يكون هذا تشابهًا صدفة في رقم الموديل بين منتجات مختلفة: ' + groupDescriptions.join('، ') + '.');
+    }
+
+    if (flags.length > 0) {
+      notes.push(agg.modelCode + ' — ' + flags.join(' '));
+    }
+  });
+
   return {
     qtyList: qtyList,
     salesList: salesList,
+    notes: notes,
     totalModels: modelKeys.length,
   };
 };

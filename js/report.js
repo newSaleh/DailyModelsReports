@@ -74,6 +74,11 @@ App.buildReportText = function (list, mode, dateDisplay) {
   return parts.join('\n');
 };
 
+App.buildNotesText = function (notes) {
+  if (!notes || notes.length === 0) return 'لا توجد ملاحظات على الموديلات الظاهرة في التقريرين.';
+  return 'ملاحظات على البيانات:\n\n' + notes.map(function (n) { return '• ' + n; }).join('\n');
+};
+
 // ===== نسخة HTML مبسّطة لتصدير PDF (نص فقط، بدون صور، لأصغر حجم ممكن) =====
 // جدول واحد مضغوط يجمع كل الموديلات الـ20 في صفحة A4 واحدة (أفقية لاتساع أكبر).
 
@@ -127,4 +132,13 @@ App.buildReportHTML = function (list, mode, dateDisplay) {
       '</tr></thead>' +
       '<tbody>' + rows + '</tbody>' +
     '</table>';
+};
+
+App.buildNotesHTML = function (notes, dateDisplay) {
+  var title = 'ملاحظات على البيانات ليوم ' + dateDisplay;
+  if (!notes || notes.length === 0) {
+    return '<h1 class="p-title">' + App.escapeHtml(title) + '</h1><p class="p-empty">لا توجد ملاحظات على الموديلات الظاهرة في التقريرين.</p>';
+  }
+  var items = notes.map(function (n) { return '<li>' + App.escapeHtml(n) + '</li>'; }).join('');
+  return '<h1 class="p-title">' + App.escapeHtml(title) + '</h1><ul class="p-notes-list">' + items + '</ul>';
 };

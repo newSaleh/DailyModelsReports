@@ -10,6 +10,7 @@
   var resultsSection = document.getElementById('resultsSection');
   var qtyReportText = document.getElementById('qtyReportText');
   var salesReportText = document.getElementById('salesReportText');
+  var notesText = document.getElementById('notesText');
 
   var printArea = document.getElementById('printArea');
 
@@ -111,6 +112,7 @@
         var dateDisplay = App.dateInputToDisplay(dateInput.value);
         qtyReportText.textContent = App.buildReportText(result.qtyList, 'qty', dateDisplay);
         salesReportText.textContent = App.buildReportText(result.salesList, 'sales', dateDisplay);
+        notesText.textContent = App.buildNotesText(result.notes);
 
         lastResult = result;
         lastDateDisplay = dateDisplay;
@@ -158,12 +160,20 @@
   function exportReportToPdf(reportKey) {
     if (!lastResult) return;
 
-    var list = reportKey === 'qty' ? lastResult.qtyList : lastResult.salesList;
-    var html = App.buildReportHTML(list, reportKey, lastDateDisplay);
-    var fileTitle = App.reportTitle(reportKey, lastDateDisplay);
+    var html, fileTitle, pageCss;
+    if (reportKey === 'notes') {
+      html = App.buildNotesHTML(lastResult.notes, lastDateDisplay);
+      fileTitle = 'ملاحظات على البيانات ليوم ' + lastDateDisplay;
+      pageCss = '@page { size: A4 portrait; margin: 14mm 12mm; }';
+    } else {
+      var list = reportKey === 'qty' ? lastResult.qtyList : lastResult.salesList;
+      html = App.buildReportHTML(list, reportKey, lastDateDisplay);
+      fileTitle = App.reportTitle(reportKey, lastDateDisplay);
+      pageCss = '@page { size: A4 landscape; margin: 10mm; }';
+    }
 
     printArea.innerHTML = html;
-    dynamicPrintStyle.textContent = '@media print { @page { size: A4 landscape; margin: 10mm; } }';
+    dynamicPrintStyle.textContent = '@media print { ' + pageCss + ' }';
     var previousTitle = document.title;
     document.title = fileTitle;
     document.body.classList.add('printing');
