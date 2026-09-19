@@ -4,13 +4,15 @@
  */
 window.App = window.App || {};
 
-// ترتيب الفروع ثابت دائمًا بهذا الشكل في كل التقارير
+// رموز الفروع وأسماؤها. هذا الترتيب (701/706/707/711/803) هو الترتيب الأساسي
+// المستخدم في الجداول (أعمدة ثابتة الهوية)؛ التقارير النصية تعيد ترتيب هذه
+// الفروع لكل موديل من الأكثر مبيعًا إلى الأقل (راجع report.js).
 App.BRANCHES = [
   { key: '701', name: 'الدائري', aliases: ['701soldqty', '701sold', '701qty', '701', 'الدائري', 'aldaeri', 'aldairi'] },
-  { key: '706', name: 'التحلية', aliases: ['706soldqty', '706sold', '706qty', '706', 'التحلية', 'altahlia', 'altahliah'] },
+  { key: '706', name: 'الفيحاء', aliases: ['706soldqty', '706sold', '706qty', '706', 'الفيحاء', 'alfayhaa', 'alfayha'] },
   { key: '707', name: 'البديعة', aliases: ['707soldqty', '707sold', '707qty', '707', 'البديعة', 'albadiah', 'albadeah'] },
-  { key: '711', name: 'الفيحاء', aliases: ['711soldqty', '711sold', '711qty', '711', 'الفيحاء', 'alfayhaa', 'alfayha'] },
-  { key: '803', name: 'القصيم', aliases: ['803soldqty', '803sold', '803qty', '803', 'القصيم', 'alqassim', 'alqaseem'] },
+  { key: '711', name: 'القصيم', aliases: ['711soldqty', '711sold', '711qty', '711', 'القصيم', 'alqassim', 'alqaseem'] },
+  { key: '803', name: 'التحلية', aliases: ['803soldqty', '803sold', '803qty', '803', 'التحلية', 'altahlia', 'altahliah'] },
 ];
 
 // أسماء الأعمدة المحتملة (عربي/إنجليزي) لكل حقل أساسي. المطابقة تتم بعد إزالة

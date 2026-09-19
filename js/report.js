@@ -9,6 +9,16 @@ function branchLine(branch, value, unit, formatter) {
   return branch.name + ': ' + text;
 }
 
+// يرتّب الفروع لموديل واحد من الأكثر مبيعًا إلى الأقل (بحسب الكمية أو مبلغ
+// البيع حسب نوع التقرير)، مع بقاء المتساوي منها (ومنه غير الموجود) بترتيبه
+// الجغرافي الأصلي كحل افتراضي مستقر
+function sortedBranchesForItem(item, mode) {
+  var values = mode === 'qty' ? item.branchQty : item.branchSales;
+  return App.BRANCHES.slice().sort(function (a, b) {
+    return (values[b.key] || 0) - (values[a.key] || 0);
+  });
+}
+
 function buildEntry(item, index, mode) {
   var lines = [];
   lines.push('#' + (index + 1));
@@ -28,7 +38,7 @@ function buildEntry(item, index, mode) {
   lines.push(App.DIVIDER);
   lines.push('');
 
-  App.BRANCHES.forEach(function (b) {
+  sortedBranchesForItem(item, mode).forEach(function (b) {
     if (mode === 'qty') {
       lines.push(branchLine(b, item.branchQty[b.key], 'حبة', App.formatInt));
     } else {
@@ -76,11 +86,6 @@ App.buildNotesText = function (notes) {
 
 // ===== نسخة HTML مبسّطة لتصدير PDF (نص فقط، بدون صور، لأصغر حجم ممكن) =====
 // جدول واحد مضغوط يجمع كل الموديلات الـ20 في صفحة A4 واحدة (أفقية لاتساع أكبر).
-
-function branchCellText(value, notFoundLabel) {
-  var found = !(value === undefined || value === null || Math.abs(value) < 0.005);
-  return found ? App.formatInt(value) : notFoundLabel;
-}
 
 function buildTableRowHtml(item, index, mode) {
   var totalText = mode === 'qty' ? App.formatInt(item.totalQty) : App.formatMoney(item.totalSales);
