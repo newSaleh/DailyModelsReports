@@ -143,3 +143,57 @@ App.SUPPLIER_ALIASES = {
   "199": "روائع المخمل",
   "286": "بندر جدة"
 };
+
+/*
+ * أزواج أكواد نفس المورد (فرع الرياض RUH ↔ فرع جدة JED)، كما أرسلها
+ * المستخدم. هذه هي المرجع الرسمي لتحديد أن كودين مختلفين يمثلان مورّدًا
+ * واحدًا — لا يُعتمد على تطابق ModelCode لاستنتاج ذلك (قد يتشابه رقم
+ * الموديل صدفة بين قطعتين مختلفتين تمامًا من موردين مختلفين).
+ */
+App.SUPPLIER_CODE_PAIRS = [
+  ["180", "252"], ["183", "284"], ["182", "271"], ["160", "202"],
+  ["137", "240"], ["181", "203"], ["158", "246"], ["145", "253"],
+  ["117", "251"], ["115", "201"], ["198", "434"], ["317", "459"],
+  ["310", "430"], ["103", "218"], ["306", "416"], ["309", "444"],
+  ["302", "436"], ["104", "221"], ["318", "230"], ["106", "247"],
+  ["165", "428"], ["319", "447"], ["161", "401"], ["178", "293"],
+  ["184", "297"], ["179", "407"], ["159", "402"], ["108", "299"],
+];
+
+// يبني مجموعات الموردين المتطابقين (نفس الاسم المختصر، أو زوج رياض/جدة)
+// عبر Union-Find بسيط، ويوفر App.supplierGroupRoot(normalizedCode) الذي
+// يعيد معرّف مجموعة ثابت لكل كود مورد معروف.
+(function buildSupplierGroups() {
+  var parent = {};
+  function find(x) {
+    if (!(x in parent)) parent[x] = x;
+    while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; }
+    return x;
+  }
+  function union(a, b) {
+    var ra = find(a), rb = find(b);
+    if (ra === rb) return;
+    if (ra < rb) parent[rb] = ra; else parent[ra] = rb;
+  }
+
+  var codesByAlias = {};
+  Object.keys(App.SUPPLIER_ALIASES).forEach(function (code) {
+    var name = App.SUPPLIER_ALIASES[code];
+    if (!codesByAlias[name]) codesByAlias[name] = [];
+    codesByAlias[name].push(code);
+  });
+  Object.keys(codesByAlias).forEach(function (name) {
+    var codes = codesByAlias[name];
+    for (var i = 1; i < codes.length; i++) union(codes[0], codes[i]);
+  });
+
+  App.SUPPLIER_CODE_PAIRS.forEach(function (pair) { union(pair[0], pair[1]); });
+
+  var roots = {};
+  Object.keys(App.SUPPLIER_ALIASES).forEach(function (c) { roots[c] = find(c); });
+  App.SUPPLIER_CODE_PAIRS.forEach(function (p) { roots[p[0]] = find(p[0]); roots[p[1]] = find(p[1]); });
+
+  App.supplierGroupRoot = function (normalizedCode) {
+    return roots[normalizedCode] || normalizedCode;
+  };
+})();
