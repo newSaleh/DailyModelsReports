@@ -85,7 +85,7 @@ function branchRowHtml(branch, value, unit, formatter) {
     '</div>';
 }
 
-function buildEntryHtml(item, index, mode) {
+function buildEntryHtml(item, index, total, mode, title, isLast) {
   var totalLine = mode === 'qty'
     ? App.formatInt(item.totalQty) + ' حبة'
     : App.formatMoney(item.totalSales) + ' ريال';
@@ -97,32 +97,40 @@ function buildEntryHtml(item, index, mode) {
   }).join('');
 
   return '' +
-    '<section class="p-entry">' +
-      '<div class="p-entry-head">' +
-        '<span class="p-rank">#' + (index + 1) + '</span>' +
-        '<span class="p-model-code">' + App.escapeHtml(item.modelCode) + '</span>' +
+    '<section class="p-entry' + (isLast ? ' p-entry-last' : '') + '">' +
+      '<div class="p-page-header">' +
+        '<span>' + App.escapeHtml(title) + '</span>' +
+        '<span>' + (index + 1) + ' / ' + total + '</span>' +
       '</div>' +
-      '<div class="p-model-name">' + App.escapeHtml(item.modelName || '—') + '</div>' +
-      '<div class="p-meta-row">' +
-        '<span>' + App.escapeHtml(item.priceLine) + '</span>' +
-        '<span>' + App.escapeHtml(item.supplierName || '—') + '</span>' +
+      '<div class="p-entry-body">' +
+        '<div class="p-entry-head">' +
+          '<span class="p-rank">#' + (index + 1) + '</span>' +
+          '<span class="p-model-code">' + App.escapeHtml(item.modelCode) + '</span>' +
+        '</div>' +
+        '<div class="p-model-name">' + App.escapeHtml(item.modelName || '—') + '</div>' +
+        '<div class="p-meta-row">' +
+          '<span>' + App.escapeHtml(item.priceLine) + '</span>' +
+          '<span>' + App.escapeHtml(item.supplierName || '—') + '</span>' +
+        '</div>' +
+        '<div class="p-total">إجمالي البيع: <strong>' + App.escapeHtml(totalLine) + '</strong></div>' +
+        '<div class="p-branches">' + branchesHtml + '</div>' +
       '</div>' +
-      '<div class="p-total">إجمالي البيع: <strong>' + App.escapeHtml(totalLine) + '</strong></div>' +
-      '<div class="p-branches">' + branchesHtml + '</div>' +
     '</section>';
 }
 
 /**
  * يبني HTML مخصّص للطباعة/تصدير PDF (نص خالص، لا صور) لتقرير كامل.
+ * كل موديل يظهر في صفحة A4 مستقلة.
  * mode: 'qty' أو 'sales'
  */
 App.buildReportHTML = function (list, mode, dateDisplay) {
   var title = App.reportTitle(mode, dateDisplay);
-  var body = (!list || list.length === 0)
-    ? '<p class="p-empty">لا توجد بيانات مطابقة لهذا اليوم.</p>'
-    : list.map(function (item, i) { return buildEntryHtml(item, i, mode); }).join('');
-
-  return '<h1 class="p-title">' + App.escapeHtml(title) + '</h1>' + body;
+  if (!list || list.length === 0) {
+    return '<h1 class="p-title">' + App.escapeHtml(title) + '</h1><p class="p-empty">لا توجد بيانات مطابقة لهذا اليوم.</p>';
+  }
+  return list.map(function (item, i) {
+    return buildEntryHtml(item, i, list.length, mode, title, i === list.length - 1);
+  }).join('');
 };
 
 App.buildNotesHTML = function (notes, dateDisplay) {

@@ -191,7 +191,7 @@ textarea {
 #printArea { display: none; }
 
 @media print {
-  @page { margin: 14mm 12mm; }
+  @page { size: A4; margin: 14mm 12mm; }
 
   body.printing #printArea {
     display: block !important;
@@ -218,48 +218,85 @@ textarea {
   padding-bottom: 6px;
 }
 
+/* كل موديل (تقرير) يشغل صفحة A4 مستقلة */
 .p-entry {
+  min-height: 265mm;
+  display: flex;
+  flex-direction: column;
+  break-after: page;
+  page-break-after: always;
   break-inside: avoid;
   page-break-inside: avoid;
-  border-bottom: 0.75px solid #999;
-  padding: 7px 0;
 }
-.p-entry:first-of-type { padding-top: 0; }
+.p-entry-last {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+.p-page-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #777;
+  border-bottom: 0.75px solid #ccc;
+  padding-bottom: 6px;
+  margin-bottom: auto;
+}
+
+.p-entry-body {
+  margin: auto 0;
+  padding: 10mm 0;
+}
 
 .p-entry-head {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 10px;
   font-weight: 700;
+  border-bottom: 2px solid #000;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
 }
-.p-rank { font-size: 12.5px; }
-.p-model-code { font-size: 12.5px; letter-spacing: 0.3px; }
+.p-rank { font-size: 22px; }
+.p-model-code { font-size: 28px; letter-spacing: 0.4px; }
 
-.p-model-name { margin-top: 1px; }
+.p-model-name { font-size: 18px; margin-top: 2px; }
 
 .p-meta-row {
   display: flex;
+  justify-content: space-between;
   gap: 14px;
   color: #333;
-  margin-top: 1px;
+  font-size: 14px;
+  margin-top: 6px;
 }
 
-.p-total { margin-top: 3px; }
+.p-total {
+  margin-top: 16px;
+  font-size: 17px;
+  border-top: 1px dashed #999;
+  border-bottom: 1px dashed #999;
+  padding: 8px 0;
+}
+.p-total strong { font-size: 20px; }
 
 .p-branches {
-  margin-top: 3px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 16px;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .p-branch {
   display: flex;
   justify-content: space-between;
-  border-bottom: 0.5px dotted #bbb;
+  font-size: 15px;
+  padding: 6px 2px;
+  border-bottom: 0.75px dotted #bbb;
 }
 .p-branch-name { color: #333; }
 .p-branch-value { font-weight: 600; }
-.p-branch-empty .p-branch-value { color: #777; font-weight: 400; }
+.p-branch-empty .p-branch-value { color: #888; font-weight: 400; }
 
 .p-notes-list {
   margin: 0;
