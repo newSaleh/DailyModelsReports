@@ -44,10 +44,13 @@ function buildEntry(item, index, mode) {
   return lines.join('\n');
 }
 
-App.reportTitle = function (mode, dateDisplay) {
+// العدد الظاهر في العنوان هو عدد الموديلات الفعلي في القائمة (قد يكون أقل
+// من العدد المطلوب إن لم تتوفر بيانات كافية)
+App.reportTitle = function (list, mode, dateDisplay) {
+  var n = list ? list.length : 0;
   return mode === 'qty'
-    ? 'أكثر 20 موديل بيعًا (كمية) ليوم ' + dateDisplay
-    : 'أكثر 20 موديل بيعًا (مبلغ البيع) ليوم ' + dateDisplay;
+    ? 'أكثر ' + n + ' موديل بيعًا (كمية) ليوم ' + dateDisplay
+    : 'أكثر ' + n + ' موديل بيعًا (مبلغ البيع) ليوم ' + dateDisplay;
 };
 
 /**
@@ -55,7 +58,7 @@ App.reportTitle = function (mode, dateDisplay) {
  * mode: 'qty' أو 'sales'
  */
 App.buildReportText = function (list, mode, dateDisplay) {
-  var title = App.reportTitle(mode, dateDisplay) + ':';
+  var title = App.reportTitle(list, mode, dateDisplay) + ':';
 
   if (!list || list.length === 0) {
     return title + '\n\nلا توجد بيانات مطابقة لهذا اليوم.';
@@ -113,7 +116,7 @@ function buildTableRowHtml(item, index, mode) {
  * mode: 'qty' أو 'sales'
  */
 App.buildReportHTML = function (list, mode, dateDisplay) {
-  var title = App.reportTitle(mode, dateDisplay);
+  var title = App.reportTitle(list, mode, dateDisplay);
   if (!list || list.length === 0) {
     return '<h1 class="p-title">' + App.escapeHtml(title) + '</h1><p class="p-empty">لا توجد بيانات مطابقة لهذا اليوم.</p>';
   }

@@ -5,9 +5,12 @@
   var pasteArea = document.getElementById('pasteArea');
   var dateInput = document.getElementById('dateInput');
   var dateHint = document.getElementById('dateHint');
+  var topNInput = document.getElementById('topNInput');
   var analyzeBtn = document.getElementById('analyzeBtn');
   var statusMsg = document.getElementById('statusMsg');
   var resultsSection = document.getElementById('resultsSection');
+  var qtyCardTitle = document.getElementById('qtyCardTitle');
+  var salesCardTitle = document.getElementById('salesCardTitle');
   var qtyReportText = document.getElementById('qtyReportText');
   var salesReportText = document.getElementById('salesReportText');
   var notesText = document.getElementById('notesText');
@@ -94,6 +97,11 @@
       setStatus('الرجاء اختيار التاريخ.', true);
       return;
     }
+    var topN = parseInt(topNInput.value, 10);
+    if (!topN || topN < 1) {
+      setStatus('الرجاء إدخال عدد موديلات صحيح (1 أو أكثر).', true);
+      return;
+    }
 
     analyzeBtn.disabled = true;
     setStatus('جارٍ التحليل، قد يستغرق ذلك بضع ثوانٍ مع الملفات الكبيرة...', false);
@@ -102,7 +110,7 @@
     // تأجيل بسيط للسماح للواجهة بتحديث حالة "جارٍ التحليل" قبل المعالجة الثقيلة
     setTimeout(function () {
       try {
-        var result = App.analyze(rows2D, { selectedDateKey: dateInput.value });
+        var result = App.analyze(rows2D, { selectedDateKey: dateInput.value, topN: topN });
         if (result.error) {
           setStatus(result.error, true);
           analyzeBtn.disabled = false;
@@ -110,6 +118,8 @@
         }
 
         var dateDisplay = App.dateInputToDisplay(dateInput.value);
+        qtyCardTitle.textContent = App.reportTitle(result.qtyList, 'qty', dateDisplay);
+        salesCardTitle.textContent = App.reportTitle(result.salesList, 'sales', dateDisplay);
         qtyReportText.textContent = App.buildReportText(result.qtyList, 'qty', dateDisplay);
         salesReportText.textContent = App.buildReportText(result.salesList, 'sales', dateDisplay);
         notesText.textContent = App.buildNotesText(result.notes);
@@ -168,7 +178,7 @@
     } else {
       var list = reportKey === 'qty' ? lastResult.qtyList : lastResult.salesList;
       html = App.buildReportHTML(list, reportKey, lastDateDisplay);
-      fileTitle = App.reportTitle(reportKey, lastDateDisplay);
+      fileTitle = App.reportTitle(list, reportKey, lastDateDisplay);
       pageCss = '@page { size: A4 landscape; margin: 10mm; }';
     }
 

@@ -7,6 +7,9 @@ window.App = window.App || {};
 App.analyze = function (rows2D, options) {
   options = options || {};
   var selectedDateKey = options.selectedDateKey || null; // 'YYYY-MM-DD'
+  var topN = App.toNumber(options.topN);
+  if (topN === null || topN < 1) topN = 20;
+  topN = Math.floor(topN);
 
   if (!rows2D || rows2D.length < 2) {
     return {
@@ -193,8 +196,8 @@ App.analyze = function (rows2D, options) {
     };
   });
 
-  var qtyList = finalModels.slice().sort(function (a, b) { return b.totalQty - a.totalQty; }).slice(0, 20);
-  var salesList = finalModels.slice().sort(function (a, b) { return b.totalSales - a.totalSales; }).slice(0, 20);
+  var qtyList = finalModels.slice().sort(function (a, b) { return b.totalQty - a.totalQty; }).slice(0, topN);
+  var salesList = finalModels.slice().sort(function (a, b) { return b.totalSales - a.totalSales; }).slice(0, topN);
 
   // ---- ملاحظات: تُبنى فقط للموديلات الظاهرة فعليًا في التقريرين، لتشرح
   // مباشرة أي شيء غريب يراه المستخدم (سعر غير موحّد، اسم مختلف، كود مرتبط

@@ -11,7 +11,7 @@
   <div class="page">
     <header class="page-header">
       <h1>محلل مبيعات الموديلات</h1>
-      <p class="subtitle">ارفع ملف Excel أو الصق البيانات، واختر التاريخ، لإنشاء تقريري أفضل 20 موديل (كمية / مبلغ) فورًا.</p>
+      <p class="subtitle">ارفع ملف Excel أو الصق البيانات، واختر التاريخ وعدد الموديلات، لإنشاء تقريري أفضل الموديلات (كمية / مبلغ) فورًا.</p>
     </header>
 
     <section class="card">
@@ -35,12 +35,18 @@
     </section>
 
     <section class="card">
-      <h2>٢. التاريخ</h2>
+      <h2>٢. التاريخ وعدد الموديلات</h2>
       <div class="field inline">
         <label for="dateInput">التاريخ</label>
         <input type="date" id="dateInput">
       </div>
       <p class="hint" id="dateHint"></p>
+
+      <div class="field inline">
+        <label for="topNInput">عدد الموديلات المعروضة</label>
+        <input type="number" id="topNInput" min="1" max="500" step="1" value="20">
+      </div>
+      <p class="hint">افتراضيًا 20 — يمكنك تغيير الرقم لعرض أي عدد آخر من الموديلات (مثلًا 35).</p>
     </section>
 
     <section class="card">
@@ -51,7 +57,7 @@
     <section id="resultsSection" class="hidden">
       <section class="card report-card">
         <div class="report-head">
-          <h2>أكثر 20 موديل بيعًا (كمية)</h2>
+          <h2 id="qtyCardTitle">أكثر 20 موديل بيعًا (كمية)</h2>
           <div class="btn-group">
             <button class="copy-btn" data-target="qtyReportText">نسخ التقرير</button>
             <button class="pdf-btn" data-report="qty">تصدير PDF</button>
@@ -62,7 +68,7 @@
 
       <section class="card report-card">
         <div class="report-head">
-          <h2>أكثر 20 موديل بيعًا (مبلغ البيع)</h2>
+          <h2 id="salesCardTitle">أكثر 20 موديل بيعًا (مبلغ البيع)</h2>
           <div class="btn-group">
             <button class="copy-btn" data-target="salesReportText">نسخ التقرير</button>
             <button class="pdf-btn" data-report="sales">تصدير PDF</button>
