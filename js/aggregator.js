@@ -1,7 +1,7 @@
 window.App = window.App || {};
 
 /**
- * يحلل مصفوفة صفوف (أول صف = عناوين) ويعيد تقريرين (كمية / مبلغ) + ملاحظات على البيانات.
+ * يحلل مصفوفة صفوف (أول صف = عناوين) ويعيد تقريرين (كمية / مبلغ).
  * المفتاح الأساسي للتجميع هو ModelCode فقط، بغض النظر عن SupplierCode.
  */
 App.analyze = function (rows2D, options) {
@@ -29,18 +29,6 @@ App.analyze = function (rows2D, options) {
     return { error: 'تعذّر العثور على عمود "ModelCode" (كود الموديل) في البيانات. تأكد أن صف العناوين موجود ويحتوي على هذا الحقل.' };
   }
 
-  // عدّادات وملاحظات
-  var totalRows = dataRows.length;
-  var missingModelCode = 0;
-  var missingModelName = 0;
-  var missingPrice = 0;
-  var negativeQtyRows = 0;
-  var unreasonableSalesRows = 0;
-  var unknownBranchTexts = {};
-  var estimatedBranchSalesUsed = false;
-  var dateFilteredOutCount = 0;
-  var unknownDateCount = 0;
-
   // خريطة التجميع حسب ModelCode (بعد التقليم والتوحيد لحالة الأحرف)
   var models = {}; // key -> aggregate object
 
@@ -55,8 +43,7 @@ App.analyze = function (rows2D, options) {
         modelNameCounts: {},
         categoryCounts: {},
         priceCounts: {},
-        supplierQty: {}, // key: code|name -> qty
-        supplierCodesSet: {},
+        supplierGroups: {}, // key: اسم المورد (أو كوده إن لم يوجد اسم) -> { qty, codes: {code: true} }
       };
       App.BRANCHES.forEach(function (b) { models[modelKey].branchQty[b.key] = 0; models[modelKey].branchSales[b.key] = 0; });
     }
@@ -67,19 +54,17 @@ App.analyze = function (rows2D, options) {
     var row = dataRows[r];
 
     var modelCodeRaw = App.trimOrEmpty(row[colMap.modelCode]);
-    if (!modelCodeRaw) { missingModelCode++; continue; }
+    if (!modelCodeRaw) continue;
 
     if (hasDateCol && selectedDateKey) {
       var rowDateKey = App.parseDateKey(row[colMap.date]);
-      if (rowDateKey === null) { unknownDateCount++; continue; }
-      if (rowDateKey !== selectedDateKey) { dateFilteredOutCount++; continue; }
+      if (rowDateKey === null || rowDateKey !== selectedDateKey) continue;
     }
 
     var modelKey = modelCodeRaw.toUpperCase();
     var agg = getAgg(modelKey, modelCodeRaw);
 
     var modelName = colMap.modelName !== -1 ? App.trimOrEmpty(row[colMap.modelName]) : '';
-    if (colMap.modelName !== -1 && !modelName) missingModelName++;
     if (modelName) agg.modelNameCounts[modelName] = (agg.modelNameCounts[modelName] || 0) + 1;
 
     var category = colMap.category !== -1 ? App.trimOrEmpty(row[colMap.category]) : '';
@@ -89,7 +74,6 @@ App.analyze = function (rows2D, options) {
     var supplierName = colMap.supplierName !== -1 ? App.trimOrEmpty(row[colMap.supplierName]) : '';
 
     var unitPrice = colMap.unitPrice !== -1 ? App.toNumber(row[colMap.unitPrice]) : null;
-    if (unitPrice === null) missingPrice++;
     if (unitPrice !== null) agg.priceCounts[unitPrice] = (agg.priceCounts[unitPrice] || 0) + 1;
 
     // ---- تحديد كمية كل فرع لهذا السطر ----
@@ -110,18 +94,12 @@ App.analyze = function (rows2D, options) {
       if (qtyVal === null) qtyVal = 0;
       rowQtyTotal = qtyVal;
       var matchedKey = App.matchBranchByText(branchText);
-      if (matchedKey) {
-        rowBranchQty[matchedKey] = qtyVal;
-      } else if (branchText) {
-        unknownBranchTexts[branchText] = (unknownBranchTexts[branchText] || 0) + 1;
-      }
+      if (matchedKey) rowBranchQty[matchedKey] = qtyVal;
     } else {
       var qtyVal2 = colMap.qtyTotal !== -1 ? App.toNumber(row[colMap.qtyTotal]) : null;
       rowQtyTotal = qtyVal2 === null ? 0 : qtyVal2;
       // لا توجد معلومات فروع لهذا السطر إطلاقًا
     }
-
-    if (rowQtyTotal < 0) negativeQtyRows++;
 
     // ---- تحديد مبلغ البيع لهذا السطر ----
     var rowSalesTotal;
@@ -133,7 +111,6 @@ App.analyze = function (rows2D, options) {
     } else {
       rowSalesTotal = 0;
     }
-    if (rowSalesTotal < 0) unreasonableSalesRows++;
 
     var rowBranchSales = {};
     Object.keys(rowBranchQty).forEach(function (k) {
@@ -141,7 +118,6 @@ App.analyze = function (rows2D, options) {
         rowBranchSales[k] = rowBranchQty[k] * unitPrice;
       } else if (explicitSales !== null && rowQtyTotal > 0) {
         rowBranchSales[k] = rowSalesTotal * (rowBranchQty[k] / rowQtyTotal);
-        estimatedBranchSalesUsed = true;
       } else {
         rowBranchSales[k] = 0;
       }
@@ -155,20 +131,15 @@ App.analyze = function (rows2D, options) {
       agg.branchSales[k] = (agg.branchSales[k] || 0) + rowBranchSales[k];
     });
 
-    var supplierKey = (supplierCode || '') + '|' + (supplierName || '');
-    if (supplierCode || supplierName) {
-      agg.supplierQty[supplierKey] = (agg.supplierQty[supplierKey] || 0) + rowQtyTotal;
-      if (supplierCode) agg.supplierCodesSet[supplierCode] = true;
+    var supplierGroupKey = supplierName || supplierCode;
+    if (supplierGroupKey) {
+      if (!agg.supplierGroups[supplierGroupKey]) agg.supplierGroups[supplierGroupKey] = { qty: 0, codes: {} };
+      agg.supplierGroups[supplierGroupKey].qty += rowQtyTotal;
+      if (supplierCode) agg.supplierGroups[supplierGroupKey].codes[supplierCode] = true;
     }
   }
 
   // ---- بناء القوائم النهائية لكل موديل ----
-  var modelNameConflicts = [];
-  var priceConflicts = [];
-  var multiSupplierModels = [];
-  var unallocatedQtyModels = [];
-  var modelNameFallbackUsed = false;
-
   var modelKeys = Object.keys(models);
   var finalModels = modelKeys.map(function (key) {
     var agg = models[key];
@@ -179,13 +150,11 @@ App.analyze = function (rows2D, options) {
     if (nameEntries.length > 0) {
       nameEntries.sort(function (a, b) { return agg.modelNameCounts[b] - agg.modelNameCounts[a]; });
       displayName = nameEntries[0];
-      if (nameEntries.length > 1) modelNameConflicts.push({ modelCode: agg.modelCode, names: nameEntries });
     } else {
       var catEntries = Object.keys(agg.categoryCounts);
       if (catEntries.length > 0) {
         catEntries.sort(function (a, b) { return agg.categoryCounts[b] - agg.categoryCounts[a]; });
         displayName = catEntries[0];
-        modelNameFallbackUsed = true;
       }
     }
 
@@ -197,36 +166,20 @@ App.analyze = function (rows2D, options) {
       priceLine = 'السعر غير متوفر';
     } else if (prices.length === 1) {
       priceLine = App.formatMoney(prices[0]) + ' ريال';
+    } else if (prices.length <= 4) {
+      priceLine = 'الأسعار: ' + prices.map(App.formatMoney).join(' / ') + ' ريال';
     } else {
-      priceConflicts.push({ modelCode: agg.modelCode, prices: prices });
-      if (prices.length <= 4) {
-        priceLine = 'الأسعار: ' + prices.map(App.formatMoney).join(' / ') + ' ريال';
-      } else {
-        priceLine = 'السعر غير موحد (' + prices.length + ' أسعار مختلفة)';
-      }
+      priceLine = 'السعر غير موحد (' + prices.length + ' أسعار مختلفة)';
     }
 
-    // المورد الأساسي (الأكبر كمية)
-    var supplierKeys = Object.keys(agg.supplierQty);
+    // المورد الأساسي (الأكبر كمية) مع كود/أكواده بين قوسين
+    var supplierNames = Object.keys(agg.supplierGroups);
     var supplierName = '';
-    if (supplierKeys.length > 0) {
-      supplierKeys.sort(function (a, b) { return agg.supplierQty[b] - agg.supplierQty[a]; });
-      var topKey = supplierKeys[0];
-      var parts = topKey.split('|');
-      supplierName = parts[1] || parts[0] || '';
-      var distinctSupplierCodes = Object.keys(agg.supplierCodesSet);
-      if (distinctSupplierCodes.length > 1) {
-        multiSupplierModels.push({ modelCode: agg.modelCode, supplierCodes: distinctSupplierCodes });
-        supplierName = supplierName + ' (+موردين آخرين)';
-      }
-    }
-
-    // فحص عدم توزّع الكمية على الفروع المعروفة (فقط عند وجود بيانات فروع أصلًا)
-    if (hasWideBranchCols || hasPivotBranch) {
-      var sumBranchQty = App.BRANCHES.reduce(function (s, b) { return s + (agg.branchQty[b.key] || 0); }, 0);
-      if (Math.abs(sumBranchQty - agg.totalQty) > 0.01) {
-        unallocatedQtyModels.push({ modelCode: agg.modelCode, total: agg.totalQty, allocated: sumBranchQty });
-      }
+    if (supplierNames.length > 0) {
+      supplierNames.sort(function (a, b) { return agg.supplierGroups[b].qty - agg.supplierGroups[a].qty; });
+      var topName = supplierNames[0];
+      var codes = Object.keys(agg.supplierGroups[topName].codes).sort();
+      supplierName = topName + (codes.length ? ' (' + codes.join('/') + ')' : '');
     }
 
     return {
@@ -244,49 +197,9 @@ App.analyze = function (rows2D, options) {
   var qtyList = finalModels.slice().sort(function (a, b) { return b.totalQty - a.totalQty; }).slice(0, 20);
   var salesList = finalModels.slice().sort(function (a, b) { return b.totalSales - a.totalSales; }).slice(0, 20);
 
-  // ---- بناء نص الملاحظات ----
-  var notes = [];
-  notes.push('إجمالي السجلات المقروءة: ' + App.formatInt(totalRows) + ' — عدد الموديلات بعد الدمج: ' + App.formatInt(modelKeys.length) + '.');
-  if (finalModels.length < 20) {
-    notes.push('عدد الموديلات المتاحة أقل من 20، لذلك يعرض التقرير ' + finalModels.length + ' موديل فقط.');
-  }
-  if (missingModelCode > 0) notes.push('تم تجاهل ' + App.formatInt(missingModelCode) + ' سجل بسبب عدم وجود كود موديل (ModelCode).');
-  if (missingModelName > 0) notes.push(App.formatInt(missingModelName) + ' سجل بدون اسم موديل.');
-  if (modelNameFallbackUsed) notes.push('لا يوجد عمود اسم موديل صريح في بعض السجلات؛ تم عرض اسم التصنيف/الفئة كبديل حيثما توفر.');
-  if (missingPrice > 0) notes.push(App.formatInt(missingPrice) + ' سجل بدون سعر وحدة.');
-  if (negativeQtyRows > 0) notes.push('تم رصد ' + App.formatInt(negativeQtyRows) + ' سجل بكمية سالبة.');
-  if (unreasonableSalesRows > 0) notes.push('تم رصد ' + App.formatInt(unreasonableSalesRows) + ' سجل بمبلغ بيع سالب أو غير منطقي.');
-  if (!hasWideBranchCols && !hasPivotBranch) notes.push('لم يتم العثور على بيانات فروع في الملف/النص المدخل؛ ستظهر كل الفروع "غير موجود" حتى لو كان هناك إجمالي كمية.');
-  if (Object.keys(unknownBranchTexts).length > 0) {
-    notes.push('توجد أسماء فروع غير معروفة في البيانات ولم تُدرج ضمن الفروع الخمسة: ' + Object.keys(unknownBranchTexts).slice(0, 10).join('، ') + '.');
-  }
-  if (estimatedBranchSalesUsed) notes.push('في بعض السجلات لا يوجد سعر وحدة صريح؛ تم توزيع مبلغ البيع على الفروع تناسبيًا حسب الكمية كتقدير.');
-  if (hasDateCol && selectedDateKey) {
-    if (dateFilteredOutCount > 0) notes.push('تم استبعاد ' + App.formatInt(dateFilteredOutCount) + ' سجل لا يخص التاريخ المحدد.');
-    if (unknownDateCount > 0) notes.push('تعذّر قراءة التاريخ في ' + App.formatInt(unknownDateCount) + ' سجل فتم تجاهلها.');
-  } else if (!hasDateCol) {
-    notes.push('لا يوجد عمود تاريخ في البيانات، تم اعتبار كل السجلات ضمن التاريخ المحدد في الأعلى كتسمية للتقرير فقط.');
-  }
-  if (modelNameConflicts.length > 0) {
-    notes.push('اختلاف اسم الموديل لنفس ModelCode في ' + modelNameConflicts.length + ' موديل (مثال: ' +
-      modelNameConflicts.slice(0, 5).map(function (m) { return m.modelCode + ' [' + m.names.join(' / ') + ']'; }).join('، ') + ').');
-  }
-  if (priceConflicts.length > 0) {
-    notes.push('اختلاف السعر لنفس ModelCode في ' + priceConflicts.length + ' موديل (مثال: ' +
-      priceConflicts.slice(0, 5).map(function (m) { return m.modelCode + ' [' + m.prices.map(App.formatMoney).join(' / ') + ']'; }).join('، ') + ').');
-  }
-  if (multiSupplierModels.length > 0) {
-    notes.push('تم دمج أكثر من مورد (SupplierCode) لنفس الموديل في ' + multiSupplierModels.length + ' موديل (مثال: ' +
-      multiSupplierModels.slice(0, 5).map(function (m) { return m.modelCode + ' [' + m.supplierCodes.join('، ') + ']'; }).join('، ') + ').');
-  }
-  if (unallocatedQtyModels.length > 0) {
-    notes.push('لبعض الموديلات (' + unallocatedQtyModels.length + ') لا يتطابق إجمالي الكمية مع مجموع كميات الفروع الخمسة؛ قد تكون هناك كمية في فرع غير معروف.');
-  }
-
   return {
     qtyList: qtyList,
     salesList: salesList,
-    notes: notes,
     totalModels: modelKeys.length,
   };
 };

@@ -126,8 +126,6 @@ textarea {
 }
 .status.error { color: var(--danger); }
 
-.report-card, .notes-card { }
-
 .report-head {
   display: flex;
   align-items: center;
@@ -179,11 +177,6 @@ textarea {
   margin: 0;
   max-height: 520px;
   overflow-y: auto;
-}
-
-.notes-card .report-text {
-  font-size: 0.88rem;
-  color: #374151;
 }
 
 /* ===== منطقة تصدير PDF (مخفية على الشاشة، تظهر فقط أثناء الطباعة) ===== */
@@ -263,11 +256,5 @@ textarea {
 .p-table th:nth-child(n+7), .p-table td:nth-child(n+7) { width: 8.6%; }
 
 .p-table tbody tr { break-inside: avoid; page-break-inside: avoid; }
-
-.p-notes-list {
-  margin: 0;
-  padding-inline-start: 18px;
-}
-.p-notes-list li { margin-bottom: 5px; }
 
 .p-empty { color: #555; }

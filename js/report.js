@@ -79,11 +79,6 @@ App.buildReportText = function (list, mode, dateDisplay) {
   return parts.join('\n');
 };
 
-App.buildNotesText = function (notes) {
-  if (!notes || notes.length === 0) return 'لم يتم رصد أي ملاحظات على البيانات.';
-  return 'ملاحظات على البيانات:\n\n' + notes.map(function (n) { return '• ' + n; }).join('\n');
-};
-
 // ===== نسخة HTML مبسّطة لتصدير PDF (نص فقط، بدون صور، لأصغر حجم ممكن) =====
 // جدول واحد مضغوط يجمع كل الموديلات الـ20 في صفحة A4 واحدة (أفقية لاتساع أكبر).
 
@@ -120,7 +115,6 @@ App.buildReportHTML = function (list, mode, dateDisplay) {
     return '<h1 class="p-title">' + App.escapeHtml(title) + '</h1><p class="p-empty">لا توجد بيانات مطابقة لهذا اليوم.</p>';
   }
 
-  var unitHeader = mode === 'qty' ? 'الإجمالي (حبة)' : 'الإجمالي (ريال)';
   var rows = list.map(function (item, i) { return buildTableRowHtml(item, i, mode); }).join('');
   var branchHeaders = App.BRANCHES.map(function (b) { return '<th>' + App.escapeHtml(b.name) + '</th>'; }).join('');
 
@@ -128,18 +122,9 @@ App.buildReportHTML = function (list, mode, dateDisplay) {
     '<h1 class="p-title">' + App.escapeHtml(title) + '</h1>' +
     '<table class="p-table">' +
       '<thead><tr>' +
-        '<th class="p-td-rank">#</th><th>الموديل</th><th>الاسم</th><th>السعر</th><th>المورد</th>' +
-        '<th class="p-td-num">' + unitHeader + '</th>' + branchHeaders +
+        '<th class="p-td-rank">#</th><th>الموديل</th><th>البيان</th><th>السعر</th><th>المورد</th>' +
+        '<th class="p-td-num">الإجمالي</th>' + branchHeaders +
       '</tr></thead>' +
       '<tbody>' + rows + '</tbody>' +
     '</table>';
-};
-
-App.buildNotesHTML = function (notes, dateDisplay) {
-  var title = 'ملاحظات على البيانات ليوم ' + dateDisplay;
-  if (!notes || notes.length === 0) {
-    return '<h1 class="p-title">' + App.escapeHtml(title) + '</h1><p class="p-empty">لم يتم رصد أي ملاحظات على البيانات.</p>';
-  }
-  var items = notes.map(function (n) { return '<li>' + App.escapeHtml(n) + '</li>'; }).join('');
-  return '<h1 class="p-title">' + App.escapeHtml(title) + '</h1><ul class="p-notes-list">' + items + '</ul>';
 };
