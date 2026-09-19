@@ -226,7 +226,7 @@ textarea {
 
 .p-table th,
 .p-table td {
-  border: 0.5px solid #bbb;
+  border: 0.5px solid #000;
   padding: 6.5px 8px;
   text-align: right;
   overflow: hidden;
@@ -245,16 +245,16 @@ textarea {
 .p-td-code { font-weight: 700; direction: ltr; text-align: right; unicode-bidi: plaintext; }
 .p-td-num { text-align: center; font-variant-numeric: tabular-nums; }
 .p-td-total { font-weight: 700; }
-.p-td-empty { color: #888; }
+.p-td-empty { font-style: italic; }
 
 /* أعمدة الجدول بالترتيب: # / الموديل / الاسم / السعر / المورد / الإجمالي / 5 فروع */
 .p-table th:nth-child(2), .p-table td:nth-child(2) { width: 11%; }
-.p-table th:nth-child(3), .p-table td:nth-child(3) { width: 12%; }
+.p-table th:nth-child(3), .p-table td:nth-child(3) { width: 10%; }
 .p-table th:nth-child(4), .p-table td:nth-child(4) { width: 9%; }
-.p-table th:nth-child(5), .p-table td:nth-child(5) { width: 13.5%; }
-.p-table th:nth-child(6), .p-table td:nth-child(6) { width: 8%; }
+.p-table th:nth-child(5), .p-table td:nth-child(5) { width: 12.5%; }
+.p-table th:nth-child(6), .p-table td:nth-child(6) { width: 11%; }
 .p-table th:nth-child(n+7), .p-table td:nth-child(n+7) { width: 8.6%; }
 
 .p-table tbody tr { break-inside: avoid; page-break-inside: avoid; }
 
-.p-empty { color: #555; }
+.p-empty { font-style: italic; }

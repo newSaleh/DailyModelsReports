@@ -78,7 +78,9 @@ App.buildReportText = function (list, mode, dateDisplay) {
 // جدول واحد مضغوط يجمع كل الموديلات الـ20 في صفحة A4 واحدة (أفقية لاتساع أكبر).
 
 function buildTableRowHtml(item, index, mode) {
-  var totalText = mode === 'qty' ? App.formatInt(item.totalQty) : App.formatMoney(item.totalSales);
+  var totalText = mode === 'qty'
+    ? App.formatInt(item.totalQty) + ' حبة'
+    : App.formatMoney(item.totalSales) + ' ريال';
 
   // تفصيل الفروع بالكمية دائمًا، حتى في تقرير مبلغ البيع
   var branchCells = App.BRANCHES.map(function (b) {
