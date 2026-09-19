@@ -155,22 +155,28 @@
     exportReportToPdf(btn.getAttribute('data-report'));
   });
 
+  var dynamicPrintStyle = document.getElementById('dynamicPrintStyle');
+
   function exportReportToPdf(reportKey) {
     if (!lastResult) return;
 
-    var html, fileTitle;
+    var html, fileTitle, pageCss;
     if (reportKey === 'qty') {
       html = App.buildReportHTML(lastResult.qtyList, 'qty', lastDateDisplay);
       fileTitle = App.reportTitle('qty', lastDateDisplay);
+      pageCss = '@page { size: A4 landscape; margin: 10mm; }';
     } else if (reportKey === 'sales') {
       html = App.buildReportHTML(lastResult.salesList, 'sales', lastDateDisplay);
       fileTitle = App.reportTitle('sales', lastDateDisplay);
+      pageCss = '@page { size: A4 landscape; margin: 10mm; }';
     } else {
       html = App.buildNotesHTML(lastResult.notes, lastDateDisplay);
       fileTitle = 'ملاحظات على البيانات ليوم ' + lastDateDisplay;
+      pageCss = '@page { size: A4 portrait; margin: 14mm 12mm; }';
     }
 
     printArea.innerHTML = html;
+    dynamicPrintStyle.textContent = '@media print { ' + pageCss + ' }';
     var previousTitle = document.title;
     document.title = fileTitle;
     document.body.classList.add('printing');
@@ -179,6 +185,7 @@
       document.body.classList.remove('printing');
       document.title = previousTitle;
       printArea.innerHTML = '';
+      dynamicPrintStyle.textContent = '';
       window.removeEventListener('afterprint', cleanup);
     }
     window.addEventListener('afterprint', cleanup);

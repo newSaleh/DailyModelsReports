@@ -75,52 +75,38 @@ App.buildNotesText = function (notes) {
 };
 
 // ===== نسخة HTML مبسّطة لتصدير PDF (نص فقط، بدون صور، لأصغر حجم ممكن) =====
+// جدول واحد مضغوط يجمع كل الموديلات الـ20 في صفحة A4 واحدة (أفقية لاتساع أكبر).
 
-function branchRowHtml(branch, value, unit, formatter) {
+function branchCellText(value, notFoundLabel) {
   var found = !(value === undefined || value === null || Math.abs(value) < 0.005);
-  var text = found ? formatter(value) + ' ' + unit : App.MODEL_NOT_FOUND_LABEL;
-  return '<div class="p-branch' + (found ? '' : ' p-branch-empty') + '">' +
-    '<span class="p-branch-name">' + App.escapeHtml(branch.name) + '</span>' +
-    '<span class="p-branch-value">' + App.escapeHtml(text) + '</span>' +
-    '</div>';
+  return found ? App.formatInt(value) : notFoundLabel;
 }
 
-function buildEntryHtml(item, index, total, mode, title, isLast) {
-  var totalLine = mode === 'qty'
-    ? App.formatInt(item.totalQty) + ' حبة'
-    : App.formatMoney(item.totalSales) + ' ريال';
+function buildTableRowHtml(item, index, mode) {
+  var totalText = mode === 'qty' ? App.formatInt(item.totalQty) : App.formatMoney(item.totalSales);
 
-  var branchesHtml = App.BRANCHES.map(function (b) {
-    return mode === 'qty'
-      ? branchRowHtml(b, item.branchQty[b.key], 'حبة', App.formatInt)
-      : branchRowHtml(b, item.branchSales[b.key], 'ريال', App.formatMoney);
+  var branchCells = App.BRANCHES.map(function (b) {
+    var value = mode === 'qty' ? item.branchQty[b.key] : item.branchSales[b.key];
+    var found = !(value === undefined || value === null || Math.abs(value) < 0.005);
+    var text = found ? (mode === 'qty' ? App.formatInt(value) : App.formatMoney(value)) : App.MODEL_NOT_FOUND_LABEL;
+    return '<td class="p-td-num' + (found ? '' : ' p-td-empty') + '">' + App.escapeHtml(text) + '</td>';
   }).join('');
 
   return '' +
-    '<section class="p-entry' + (isLast ? ' p-entry-last' : '') + '">' +
-      '<div class="p-page-header">' +
-        '<span>' + App.escapeHtml(title) + '</span>' +
-        '<span>' + (index + 1) + ' / ' + total + '</span>' +
-      '</div>' +
-      '<div class="p-entry-body">' +
-        '<div class="p-entry-head">' +
-          '<span class="p-rank">#' + (index + 1) + '</span>' +
-          '<span class="p-model-code">' + App.escapeHtml(item.modelCode) + '</span>' +
-        '</div>' +
-        '<div class="p-model-name">' + App.escapeHtml(item.modelName || '—') + '</div>' +
-        '<div class="p-meta-row">' +
-          '<span>' + App.escapeHtml(item.priceLine) + '</span>' +
-          '<span>' + App.escapeHtml(item.supplierName || '—') + '</span>' +
-        '</div>' +
-        '<div class="p-total">إجمالي البيع: <strong>' + App.escapeHtml(totalLine) + '</strong></div>' +
-        '<div class="p-branches">' + branchesHtml + '</div>' +
-      '</div>' +
-    '</section>';
+    '<tr>' +
+      '<td class="p-td-rank">' + (index + 1) + '</td>' +
+      '<td class="p-td-code">' + App.escapeHtml(item.modelCode) + '</td>' +
+      '<td>' + App.escapeHtml(item.modelName || '—') + '</td>' +
+      '<td>' + App.escapeHtml(item.priceLine) + '</td>' +
+      '<td>' + App.escapeHtml(item.supplierName || '—') + '</td>' +
+      '<td class="p-td-num p-td-total">' + App.escapeHtml(totalText) + '</td>' +
+      branchCells +
+    '</tr>';
 }
 
 /**
- * يبني HTML مخصّص للطباعة/تصدير PDF (نص خالص، لا صور) لتقرير كامل.
- * كل موديل يظهر في صفحة A4 مستقلة.
+ * يبني HTML مخصّص للطباعة/تصدير PDF (نص خالص، لا صور): جدول واحد يضم كل
+ * الموديلات في صفحة A4 واحدة أفقية.
  * mode: 'qty' أو 'sales'
  */
 App.buildReportHTML = function (list, mode, dateDisplay) {
@@ -128,9 +114,20 @@ App.buildReportHTML = function (list, mode, dateDisplay) {
   if (!list || list.length === 0) {
     return '<h1 class="p-title">' + App.escapeHtml(title) + '</h1><p class="p-empty">لا توجد بيانات مطابقة لهذا اليوم.</p>';
   }
-  return list.map(function (item, i) {
-    return buildEntryHtml(item, i, list.length, mode, title, i === list.length - 1);
-  }).join('');
+
+  var unitHeader = mode === 'qty' ? 'الإجمالي (حبة)' : 'الإجمالي (ريال)';
+  var rows = list.map(function (item, i) { return buildTableRowHtml(item, i, mode); }).join('');
+  var branchHeaders = App.BRANCHES.map(function (b) { return '<th>' + App.escapeHtml(b.name) + '</th>'; }).join('');
+
+  return '' +
+    '<h1 class="p-title">' + App.escapeHtml(title) + '</h1>' +
+    '<table class="p-table">' +
+      '<thead><tr>' +
+        '<th class="p-td-rank">#</th><th>الموديل</th><th>الاسم</th><th>السعر</th><th>المورد</th>' +
+        '<th class="p-td-num">' + unitHeader + '</th>' + branchHeaders +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>';
 };
 
 App.buildNotesHTML = function (notes, dateDisplay) {
