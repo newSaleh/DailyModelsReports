@@ -12,7 +12,11 @@
   var salesReportText = document.getElementById('salesReportText');
   var notesText = document.getElementById('notesText');
 
+  var printArea = document.getElementById('printArea');
+
   var workbook = null;
+  var lastResult = null;
+  var lastDateDisplay = '';
 
   // التاريخ الافتراضي = اليوم
   (function initDate() {
@@ -110,6 +114,9 @@
         salesReportText.textContent = App.buildReportText(result.salesList, 'sales', dateDisplay);
         notesText.textContent = App.buildNotesText(result.notes);
 
+        lastResult = result;
+        lastDateDisplay = dateDisplay;
+
         resultsSection.classList.remove('hidden');
         setStatus('تم التحليل بنجاح. عدد الموديلات بعد الدمج: ' + App.formatInt(result.totalModels) + '.', false);
       } catch (err) {
@@ -141,6 +148,48 @@
       fallbackCopy(text, markCopied);
     }
   });
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest && e.target.closest('.pdf-btn');
+    if (!btn) return;
+    exportReportToPdf(btn.getAttribute('data-report'));
+  });
+
+  function exportReportToPdf(reportKey) {
+    if (!lastResult) return;
+
+    var html, fileTitle;
+    if (reportKey === 'qty') {
+      html = App.buildReportHTML(lastResult.qtyList, 'qty', lastDateDisplay);
+      fileTitle = App.reportTitle('qty', lastDateDisplay);
+    } else if (reportKey === 'sales') {
+      html = App.buildReportHTML(lastResult.salesList, 'sales', lastDateDisplay);
+      fileTitle = App.reportTitle('sales', lastDateDisplay);
+    } else {
+      html = App.buildNotesHTML(lastResult.notes, lastDateDisplay);
+      fileTitle = 'ملاحظات على البيانات ليوم ' + lastDateDisplay;
+    }
+
+    printArea.innerHTML = html;
+    var previousTitle = document.title;
+    document.title = fileTitle;
+    document.body.classList.add('printing');
+
+    function cleanup() {
+      document.body.classList.remove('printing');
+      document.title = previousTitle;
+      printArea.innerHTML = '';
+      window.removeEventListener('afterprint', cleanup);
+    }
+    window.addEventListener('afterprint', cleanup);
+
+    // تأجيل بسيط لضمان تطبيق التنسيق قبل فتح نافذة الطباعة
+    setTimeout(function () {
+      window.print();
+      // شبكة أمان في حال لم يدعم المتصفح afterprint (نادر جدًا)؛ لا تُنفَّذ عادة
+      setTimeout(cleanup, 60000);
+    }, 30);
+  }
 
   function fallbackCopy(text, done) {
     var ta = document.createElement('textarea');

@@ -93,3 +93,11 @@ App.dateInputToDisplay = function (isoStr) {
   if (parts.length !== 3) return isoStr;
   return parts[2] + '/' + parts[1] + '/' + parts[0];
 };
+
+App.escapeHtml = function (v) {
+  return String(v === undefined || v === null ? '' : v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+};

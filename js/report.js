@@ -39,14 +39,18 @@ function buildEntry(item, index, mode) {
   return lines.join('\n');
 }
 
+App.reportTitle = function (mode, dateDisplay) {
+  return mode === 'qty'
+    ? 'أكثر 20 موديل بيعًا (كمية) ليوم ' + dateDisplay
+    : 'أكثر 20 موديل بيعًا (مبلغ البيع) ليوم ' + dateDisplay;
+};
+
 /**
  * يبني نص التقرير الكامل الجاهز للنسخ (واتساب/تيليجرام)
  * mode: 'qty' أو 'sales'
  */
 App.buildReportText = function (list, mode, dateDisplay) {
-  var title = mode === 'qty'
-    ? 'أكثر 20 موديل بيعًا (كمية) ليوم ' + dateDisplay + ':'
-    : 'أكثر 20 موديل بيعًا (مبلغ البيع) ليوم ' + dateDisplay + ':';
+  var title = App.reportTitle(mode, dateDisplay) + ':';
 
   if (!list || list.length === 0) {
     return title + '\n\nلا توجد بيانات مطابقة لهذا اليوم.';
@@ -68,4 +72,64 @@ App.buildReportText = function (list, mode, dateDisplay) {
 App.buildNotesText = function (notes) {
   if (!notes || notes.length === 0) return 'لم يتم رصد أي ملاحظات على البيانات.';
   return 'ملاحظات على البيانات:\n\n' + notes.map(function (n) { return '• ' + n; }).join('\n');
+};
+
+// ===== نسخة HTML مبسّطة لتصدير PDF (نص فقط، بدون صور، لأصغر حجم ممكن) =====
+
+function branchRowHtml(branch, value, unit, formatter) {
+  var found = !(value === undefined || value === null || Math.abs(value) < 0.005);
+  var text = found ? formatter(value) + ' ' + unit : App.MODEL_NOT_FOUND_LABEL;
+  return '<div class="p-branch' + (found ? '' : ' p-branch-empty') + '">' +
+    '<span class="p-branch-name">' + App.escapeHtml(branch.name) + '</span>' +
+    '<span class="p-branch-value">' + App.escapeHtml(text) + '</span>' +
+    '</div>';
+}
+
+function buildEntryHtml(item, index, mode) {
+  var totalLine = mode === 'qty'
+    ? App.formatInt(item.totalQty) + ' حبة'
+    : App.formatMoney(item.totalSales) + ' ريال';
+
+  var branchesHtml = App.BRANCHES.map(function (b) {
+    return mode === 'qty'
+      ? branchRowHtml(b, item.branchQty[b.key], 'حبة', App.formatInt)
+      : branchRowHtml(b, item.branchSales[b.key], 'ريال', App.formatMoney);
+  }).join('');
+
+  return '' +
+    '<section class="p-entry">' +
+      '<div class="p-entry-head">' +
+        '<span class="p-rank">#' + (index + 1) + '</span>' +
+        '<span class="p-model-code">' + App.escapeHtml(item.modelCode) + '</span>' +
+      '</div>' +
+      '<div class="p-model-name">' + App.escapeHtml(item.modelName || '—') + '</div>' +
+      '<div class="p-meta-row">' +
+        '<span>' + App.escapeHtml(item.priceLine) + '</span>' +
+        '<span>' + App.escapeHtml(item.supplierName || '—') + '</span>' +
+      '</div>' +
+      '<div class="p-total">إجمالي البيع: <strong>' + App.escapeHtml(totalLine) + '</strong></div>' +
+      '<div class="p-branches">' + branchesHtml + '</div>' +
+    '</section>';
+}
+
+/**
+ * يبني HTML مخصّص للطباعة/تصدير PDF (نص خالص، لا صور) لتقرير كامل.
+ * mode: 'qty' أو 'sales'
+ */
+App.buildReportHTML = function (list, mode, dateDisplay) {
+  var title = App.reportTitle(mode, dateDisplay);
+  var body = (!list || list.length === 0)
+    ? '<p class="p-empty">لا توجد بيانات مطابقة لهذا اليوم.</p>'
+    : list.map(function (item, i) { return buildEntryHtml(item, i, mode); }).join('');
+
+  return '<h1 class="p-title">' + App.escapeHtml(title) + '</h1>' + body;
+};
+
+App.buildNotesHTML = function (notes, dateDisplay) {
+  var title = 'ملاحظات على البيانات ليوم ' + dateDisplay;
+  if (!notes || notes.length === 0) {
+    return '<h1 class="p-title">' + App.escapeHtml(title) + '</h1><p class="p-empty">لم يتم رصد أي ملاحظات على البيانات.</p>';
+  }
+  var items = notes.map(function (n) { return '<li>' + App.escapeHtml(n) + '</li>'; }).join('');
+  return '<h1 class="p-title">' + App.escapeHtml(title) + '</h1><ul class="p-notes-list">' + items + '</ul>';
 };

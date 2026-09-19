@@ -51,7 +51,10 @@
       <section class="card report-card">
         <div class="report-head">
           <h2>أكثر 20 موديل بيعًا (كمية)</h2>
-          <button class="copy-btn" data-target="qtyReportText">نسخ التقرير</button>
+          <div class="btn-group">
+            <button class="copy-btn" data-target="qtyReportText">نسخ التقرير</button>
+            <button class="pdf-btn" data-report="qty">تصدير PDF</button>
+          </div>
         </div>
         <pre id="qtyReportText" class="report-text"></pre>
       </section>
@@ -59,7 +62,10 @@
       <section class="card report-card">
         <div class="report-head">
           <h2>أكثر 20 موديل بيعًا (مبلغ البيع)</h2>
-          <button class="copy-btn" data-target="salesReportText">نسخ التقرير</button>
+          <div class="btn-group">
+            <button class="copy-btn" data-target="salesReportText">نسخ التقرير</button>
+            <button class="pdf-btn" data-report="sales">تصدير PDF</button>
+          </div>
         </div>
         <pre id="salesReportText" class="report-text"></pre>
       </section>
@@ -67,12 +73,18 @@
       <section class="card notes-card">
         <div class="report-head">
           <h2>ملاحظات على البيانات</h2>
-          <button class="copy-btn" data-target="notesText">نسخ الملاحظات</button>
+          <div class="btn-group">
+            <button class="copy-btn" data-target="notesText">نسخ الملاحظات</button>
+            <button class="pdf-btn" data-report="notes">تصدير PDF</button>
+          </div>
         </div>
         <pre id="notesText" class="report-text"></pre>
       </section>
     </section>
   </div>
+
+  <!-- منطقة مخفية تُستخدم فقط عند الطباعة/تصدير PDF لعرض تقرير واحد نظيف بدون بقية الواجهة -->
+  <div id="printArea"></div>
 
   <script src="js/vendor/xlsx.full.min.js"></script>
   <script src="js/config.js"></script>

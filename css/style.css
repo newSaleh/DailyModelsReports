@@ -137,7 +137,14 @@ textarea {
 }
 .report-head h2 { margin: 0; }
 
-.copy-btn {
+.btn-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.copy-btn,
+.pdf-btn {
   background: var(--accent);
   color: var(--primary);
   border: 1px solid var(--primary);
@@ -147,8 +154,16 @@ textarea {
   cursor: pointer;
   white-space: nowrap;
 }
-.copy-btn:hover { background: #dfe8ff; }
+.copy-btn:hover,
+.pdf-btn:hover { background: #dfe8ff; }
 .copy-btn.copied { background: #dcfce7; border-color: #16a34a; color: #15803d; }
+
+.pdf-btn {
+  background: #fff;
+  color: #374151;
+  border-color: #9ca3af;
+}
+.pdf-btn:hover { background: #f3f4f6; }
 
 .report-text {
   direction: rtl;
@@ -170,3 +185,86 @@ textarea {
   font-size: 0.88rem;
   color: #374151;
 }
+
+/* ===== منطقة تصدير PDF (مخفية على الشاشة، تظهر فقط أثناء الطباعة) ===== */
+
+#printArea { display: none; }
+
+@media print {
+  @page { margin: 14mm 12mm; }
+
+  body.printing #printArea {
+    display: block !important;
+  }
+  body.printing > *:not(#printArea) {
+    display: none !important;
+  }
+
+  #printArea {
+    direction: rtl;
+    text-align: right;
+    font-family: "Segoe UI", Tahoma, "Arial", "Noto Sans Arabic", sans-serif;
+    color: #000;
+    background: #fff;
+    font-size: 11.5px;
+    line-height: 1.5;
+  }
+}
+
+.p-title {
+  font-size: 15px;
+  margin: 0 0 10px;
+  border-bottom: 1.5px solid #000;
+  padding-bottom: 6px;
+}
+
+.p-entry {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  border-bottom: 0.75px solid #999;
+  padding: 7px 0;
+}
+.p-entry:first-of-type { padding-top: 0; }
+
+.p-entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-weight: 700;
+}
+.p-rank { font-size: 12.5px; }
+.p-model-code { font-size: 12.5px; letter-spacing: 0.3px; }
+
+.p-model-name { margin-top: 1px; }
+
+.p-meta-row {
+  display: flex;
+  gap: 14px;
+  color: #333;
+  margin-top: 1px;
+}
+
+.p-total { margin-top: 3px; }
+
+.p-branches {
+  margin-top: 3px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+.p-branch {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 0.5px dotted #bbb;
+}
+.p-branch-name { color: #333; }
+.p-branch-value { font-weight: 600; }
+.p-branch-empty .p-branch-value { color: #777; font-weight: 400; }
+
+.p-notes-list {
+  margin: 0;
+  padding-inline-start: 18px;
+}
+.p-notes-list li { margin-bottom: 5px; }
+
+.p-empty { color: #555; }
