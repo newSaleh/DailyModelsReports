@@ -61,7 +61,10 @@
     supplierDirectory.forEach(function (s) {
       var label = document.createElement('label');
       label.className = 'supplier-check-item';
-      label.dataset.name = s.name;
+      // نص البحث يشمل الاسم وأكواد المورد (بصيغتها كما وردت، وبصيغة بلا
+      // أصفار بادئة) حتى يعمل البحث بالاسم أو بالرقم معًا
+      var searchTokens = [s.name].concat(s.codes).concat(s.codes.map(App.normalizeSupplierCode));
+      label.dataset.search = searchTokens.join(' ').toLowerCase();
 
       var cb = document.createElement('input');
       cb.type = 'checkbox';
@@ -110,8 +113,8 @@
   supplierSearchInput.addEventListener('input', function () {
     var q = supplierSearchInput.value.trim().toLowerCase();
     Array.prototype.forEach.call(supplierCheckList.querySelectorAll('.supplier-check-item'), function (item) {
-      var name = (item.dataset.name || '').toLowerCase();
-      item.classList.toggle('no-match', q !== '' && name.indexOf(q) === -1);
+      var haystack = item.dataset.search || '';
+      item.classList.toggle('no-match', q !== '' && haystack.indexOf(q) === -1);
     });
   });
 
