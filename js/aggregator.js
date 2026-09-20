@@ -1,5 +1,53 @@
 window.App = window.App || {};
 
+// يحدد جذر مجموعة المورد (عبر supplierGroupRoot) والاسم الأقرب لعرضه، من
+// كود/اسم مورد كما وردا في سطر بيانات واحد. مشترك بين App.analyze
+// وApp.buildSupplierDirectory حتى يتطابق تعريف "المورد" في الاثنين تمامًا.
+App.resolveSupplierGroup = function (supplierCode, supplierName) {
+  var normalizedCode = supplierCode ? App.normalizeSupplierCode(supplierCode) : '';
+  var root = normalizedCode ? App.supplierGroupRoot(normalizedCode) : (supplierName || '');
+  var nameCandidate = App.SUPPLIER_ALIASES[normalizedCode] || supplierName || supplierCode || '';
+  return { root: root, nameCandidate: nameCandidate };
+};
+
+/**
+ * يبني قائمة الموردين المتاحين في البيانات (لتعبئة قائمة الفرز)، مجمّعة حسب
+ * نفس منطق دمج الموردين المستخدم في App.analyze (اسم مختصر مشترك أو أزواج
+ * أكواد رياض/جدة). كل عنصر: { root, name, codes }.
+ */
+App.buildSupplierDirectory = function (rows2D) {
+  if (!rows2D || rows2D.length < 2) return [];
+  var headers = rows2D[0];
+  var colMap = App.buildFieldColumnMap(headers);
+  if (colMap.supplierCode === -1 && colMap.supplierName === -1) return [];
+
+  var dataRows = rows2D.slice(1);
+  var groups = {}; // root -> { nameCount: {name: count}, codes: {code: true} }
+
+  for (var r = 0; r < dataRows.length; r++) {
+    var row = dataRows[r];
+    var supplierCode = colMap.supplierCode !== -1 ? App.trimOrEmpty(row[colMap.supplierCode]) : '';
+    var supplierName = colMap.supplierName !== -1 ? App.trimOrEmpty(row[colMap.supplierName]) : '';
+    if (!supplierCode && !supplierName) continue;
+
+    var resolved = App.resolveSupplierGroup(supplierCode, supplierName);
+    if (!resolved.root) continue;
+
+    if (!groups[resolved.root]) groups[resolved.root] = { nameCount: {}, codes: {} };
+    var g = groups[resolved.root];
+    if (supplierCode) g.codes[supplierCode] = true;
+    if (resolved.nameCandidate) g.nameCount[resolved.nameCandidate] = (g.nameCount[resolved.nameCandidate] || 0) + 1;
+  }
+
+  var list = Object.keys(groups).map(function (root) {
+    var g = groups[root];
+    var names = Object.keys(g.nameCount).sort(function (a, b) { return g.nameCount[b] - g.nameCount[a]; });
+    return { root: root, name: names[0] || root, codes: Object.keys(g.codes).sort() };
+  });
+  list.sort(function (a, b) { return a.name.localeCompare(b.name, 'ar'); });
+  return list;
+};
+
 /**
  * يحلل مصفوفة صفوف (أول صف = عناوين) ويعيد تقريرين (كمية / مبلغ).
  * المفتاح الأساسي للتجميع هو ModelCode فقط، بغض النظر عن SupplierCode.
@@ -10,6 +58,15 @@ App.analyze = function (rows2D, options) {
   var topN = App.toNumber(options.topN);
   if (topN === null || topN < 1) topN = 20;
   topN = Math.floor(topN);
+
+  // فلترة اختيارية حسب مورد واحد أو أكثر (جذور مجموعات كما في buildSupplierDirectory).
+  // null/undefined = كل الموردين (بلا فلترة). مصفوفة فارغة = لا مورد محدد
+  // عمدًا، فتُرجع النتيجة بلا أي موديلات (وليست معناها "الكل")
+  var supplierFilterSet = null;
+  if (options.supplierFilter) {
+    supplierFilterSet = {};
+    options.supplierFilter.forEach(function (root) { supplierFilterSet[root] = true; });
+  }
 
   if (!rows2D || rows2D.length < 2) {
     return {
@@ -67,6 +124,11 @@ App.analyze = function (rows2D, options) {
       if (rowDateKey === null || rowDateKey !== selectedDateKey) continue;
     }
 
+    var supplierCode = colMap.supplierCode !== -1 ? App.trimOrEmpty(row[colMap.supplierCode]) : '';
+    var supplierName = colMap.supplierName !== -1 ? App.trimOrEmpty(row[colMap.supplierName]) : '';
+    var resolvedSupplier = App.resolveSupplierGroup(supplierCode, supplierName);
+    if (supplierFilterSet && !supplierFilterSet[resolvedSupplier.root]) continue;
+
     var modelKey = modelCodeRaw.toUpperCase();
     var agg = getAgg(modelKey, modelCodeRaw);
 
@@ -75,9 +137,6 @@ App.analyze = function (rows2D, options) {
 
     var category = colMap.category !== -1 ? App.trimOrEmpty(row[colMap.category]) : '';
     if (category) agg.categoryCounts[category] = (agg.categoryCounts[category] || 0) + 1;
-
-    var supplierCode = colMap.supplierCode !== -1 ? App.trimOrEmpty(row[colMap.supplierCode]) : '';
-    var supplierName = colMap.supplierName !== -1 ? App.trimOrEmpty(row[colMap.supplierName]) : '';
 
     var unitPrice = colMap.unitPrice !== -1 ? App.toNumber(row[colMap.unitPrice]) : null;
     if (unitPrice !== null) agg.priceCounts[unitPrice] = (agg.priceCounts[unitPrice] || 0) + 1;
@@ -138,17 +197,14 @@ App.analyze = function (rows2D, options) {
     });
 
     // مجموعة المورد: كودان لنفس المورد (فرع رياض/جدة، أو أي كودين يتشاركان
-    // نفس الاسم المختصر) يُدمجان تحت معرّف مجموعة واحد عبر supplierGroupRoot،
+    // نفس الاسم المختصر) يُدمجان تحت معرّف مجموعة واحد (resolvedSupplier.root)،
     // بلا اعتماد على تطابق ModelCode لاستنتاج ذلك
-    var normalizedSupplierCode = supplierCode ? App.normalizeSupplierCode(supplierCode) : '';
-    var supplierGroupKey = normalizedSupplierCode ? App.supplierGroupRoot(normalizedSupplierCode) : (supplierName || '');
-    if (supplierGroupKey) {
-      if (!agg.supplierGroups[supplierGroupKey]) agg.supplierGroups[supplierGroupKey] = { qty: 0, codes: {}, nameQty: {} };
-      var sg = agg.supplierGroups[supplierGroupKey];
+    if (resolvedSupplier.root) {
+      if (!agg.supplierGroups[resolvedSupplier.root]) agg.supplierGroups[resolvedSupplier.root] = { qty: 0, codes: {}, nameQty: {} };
+      var sg = agg.supplierGroups[resolvedSupplier.root];
       sg.qty += rowQtyTotal;
       if (supplierCode) sg.codes[supplierCode] = true;
-      var nameCandidate = App.SUPPLIER_ALIASES[normalizedSupplierCode] || supplierName || supplierCode;
-      if (nameCandidate) sg.nameQty[nameCandidate] = (sg.nameQty[nameCandidate] || 0) + rowQtyTotal;
+      if (resolvedSupplier.nameCandidate) sg.nameQty[resolvedSupplier.nameCandidate] = (sg.nameQty[resolvedSupplier.nameCandidate] || 0) + rowQtyTotal;
     }
   }
 

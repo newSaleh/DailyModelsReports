@@ -6,6 +6,12 @@
   var dateInput = document.getElementById('dateInput');
   var dateHint = document.getElementById('dateHint');
   var topNInput = document.getElementById('topNInput');
+  var supplierDropdownToggle = document.getElementById('supplierDropdownToggle');
+  var supplierDropdownToggleText = document.getElementById('supplierDropdownToggleText');
+  var supplierDropdownPanel = document.getElementById('supplierDropdownPanel');
+  var supplierSearchInput = document.getElementById('supplierSearchInput');
+  var selectAllSuppliersBtn = document.getElementById('selectAllSuppliersBtn');
+  var supplierCheckList = document.getElementById('supplierCheckList');
   var analyzeBtn = document.getElementById('analyzeBtn');
   var statusMsg = document.getElementById('statusMsg');
   var resultsSection = document.getElementById('resultsSection');
@@ -20,6 +26,101 @@
   var workbook = null;
   var lastResult = null;
   var lastDateDisplay = '';
+
+  // ===== قائمة اختيار الموردين =====
+  var supplierDirectory = []; // [{root, name, codes}]
+  var allSuppliersSelected = true;
+  var selectedSupplierRoots = {}; // root -> true
+
+  function updateSupplierToggleText() {
+    if (allSuppliersSelected) {
+      supplierDropdownToggleText.textContent = 'كل الموردين';
+      return;
+    }
+    var count = Object.keys(selectedSupplierRoots).length;
+    if (count === 0) {
+      supplierDropdownToggleText.textContent = 'لم يُحدَّد أي مورد';
+    } else if (count === 1) {
+      var root = Object.keys(selectedSupplierRoots)[0];
+      var found = supplierDirectory.filter(function (s) { return s.root === root; })[0];
+      supplierDropdownToggleText.textContent = found ? found.name : (count + ' مورد محدد');
+    } else {
+      supplierDropdownToggleText.textContent = count + ' موردين محددين';
+    }
+  }
+
+  function renderSupplierCheckList() {
+    supplierCheckList.innerHTML = '';
+    if (supplierDirectory.length === 0) {
+      var p = document.createElement('p');
+      p.className = 'hint';
+      p.textContent = 'لا يوجد عمود مورد في البيانات المدخلة، أو لم تُرفع بيانات بعد.';
+      supplierCheckList.appendChild(p);
+      return;
+    }
+    supplierDirectory.forEach(function (s) {
+      var label = document.createElement('label');
+      label.className = 'supplier-check-item';
+      label.dataset.name = s.name;
+
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = s.root;
+      cb.checked = !!selectedSupplierRoots[s.root];
+
+      var span = document.createElement('span');
+      span.textContent = s.name + (s.codes.length ? ' (' + s.codes.join('/') + ')' : '');
+
+      cb.addEventListener('change', function () {
+        if (cb.checked) selectedSupplierRoots[s.root] = true;
+        else delete selectedSupplierRoots[s.root];
+        // بلا أي تحديد فردي = كل الموردين (بلا فلترة)
+        allSuppliersSelected = Object.keys(selectedSupplierRoots).length === 0;
+        updateSupplierToggleText();
+      });
+
+      label.appendChild(cb);
+      label.appendChild(span);
+      supplierCheckList.appendChild(label);
+    });
+  }
+
+  function refreshSupplierList() {
+    var rows2D = getRows2D();
+    supplierDirectory = rows2D ? App.buildSupplierDirectory(rows2D) : [];
+    allSuppliersSelected = true;
+    selectedSupplierRoots = {};
+    supplierSearchInput.value = '';
+    renderSupplierCheckList();
+    updateSupplierToggleText();
+  }
+
+  supplierDropdownToggle.addEventListener('click', function () {
+    var isHidden = supplierDropdownPanel.classList.toggle('hidden');
+    supplierDropdownToggle.setAttribute('aria-expanded', String(!isHidden));
+  });
+
+  document.addEventListener('click', function (e) {
+    if (supplierDropdownPanel.classList.contains('hidden')) return;
+    if (supplierDropdownPanel.contains(e.target) || supplierDropdownToggle.contains(e.target)) return;
+    supplierDropdownPanel.classList.add('hidden');
+    supplierDropdownToggle.setAttribute('aria-expanded', 'false');
+  });
+
+  supplierSearchInput.addEventListener('input', function () {
+    var q = supplierSearchInput.value.trim().toLowerCase();
+    Array.prototype.forEach.call(supplierCheckList.querySelectorAll('.supplier-check-item'), function (item) {
+      var name = (item.dataset.name || '').toLowerCase();
+      item.classList.toggle('no-match', q !== '' && name.indexOf(q) === -1);
+    });
+  });
+
+  selectAllSuppliersBtn.addEventListener('click', function () {
+    allSuppliersSelected = true;
+    selectedSupplierRoots = {};
+    Array.prototype.forEach.call(supplierCheckList.querySelectorAll('input[type="checkbox"]'), function (el) { el.checked = false; });
+    updateSupplierToggleText();
+  });
 
   // التاريخ الافتراضي = اليوم
   (function initDate() {
@@ -59,6 +160,7 @@
           sheetSelectWrap.classList.remove('hidden');
         }
         setStatus('تم تحميل الملف بنجاح (' + names.length + ' ورقة). اضغط "تحليل المبيعات" للمتابعة.', false);
+        refreshSupplierList();
       } catch (err) {
         workbook = null;
         setStatus('تعذّر قراءة ملف Excel: ' + err.message, true);
@@ -87,6 +189,14 @@
     return null;
   }
 
+  sheetSelect.addEventListener('change', refreshSupplierList);
+
+  var pasteRefreshTimer = null;
+  pasteArea.addEventListener('input', function () {
+    clearTimeout(pasteRefreshTimer);
+    pasteRefreshTimer = setTimeout(refreshSupplierList, 400);
+  });
+
   analyzeBtn.addEventListener('click', function () {
     var rows2D = getRows2D();
     if (!rows2D || rows2D.length < 2) {
@@ -102,6 +212,7 @@
       setStatus('الرجاء إدخال عدد موديلات صحيح (1 أو أكثر).', true);
       return;
     }
+    var supplierFilter = allSuppliersSelected ? null : Object.keys(selectedSupplierRoots);
 
     analyzeBtn.disabled = true;
     setStatus('جارٍ التحليل، قد يستغرق ذلك بضع ثوانٍ مع الملفات الكبيرة...', false);
@@ -110,7 +221,7 @@
     // تأجيل بسيط للسماح للواجهة بتحديث حالة "جارٍ التحليل" قبل المعالجة الثقيلة
     setTimeout(function () {
       try {
-        var result = App.analyze(rows2D, { selectedDateKey: dateInput.value, topN: topN });
+        var result = App.analyze(rows2D, { selectedDateKey: dateInput.value, topN: topN, supplierFilter: supplierFilter });
         if (result.error) {
           setStatus(result.error, true);
           analyzeBtn.disabled = false;

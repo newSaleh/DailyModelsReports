@@ -35,7 +35,28 @@
     </section>
 
     <section class="card">
-      <h2>٢. التاريخ وعدد الموديلات</h2>
+      <h2>٢. المورد</h2>
+      <div class="field">
+        <label id="supplierFilterLabel" for="supplierDropdownToggle">الموردون</label>
+        <button type="button" id="supplierDropdownToggle" class="dropdown-toggle" aria-expanded="false">
+          <span id="supplierDropdownToggleText">كل الموردين</span>
+          <span class="dropdown-caret">▾</span>
+        </button>
+        <div id="supplierDropdownPanel" class="dropdown-panel hidden">
+          <input type="text" id="supplierSearchInput" placeholder="ابحث عن مورد...">
+          <div class="dropdown-actions">
+            <button type="button" id="selectAllSuppliersBtn">إعادة التعيين (كل الموردين)</button>
+          </div>
+          <div id="supplierCheckList" class="supplier-check-list">
+            <p class="hint">ارفع البيانات أولًا لعرض قائمة الموردين.</p>
+          </div>
+        </div>
+      </div>
+      <p class="hint">اختياري — بلا تحديد يتم تحليل كل الموردين، أو ضع علامة على مورد واحد أو أكثر لعرض أفضل موديلاتهم فقط.</p>
+    </section>
+
+    <section class="card">
+      <h2>٣. التاريخ وعدد الموديلات</h2>
       <div class="field inline">
         <label for="dateInput">التاريخ</label>
         <input type="date" id="dateInput">
