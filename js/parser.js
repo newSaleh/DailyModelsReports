@@ -29,6 +29,20 @@ App.buildBranchColumnMap = function (headers) {
   return map;
 };
 
+// يبني خريطة { branchKey: columnIndex } لأعمدة رصيد/مخزون كل فرع (اختيارية)
+App.buildBranchBalanceColumnMap = function (headers) {
+  var normalized = headers.map(App.normalizeHeader);
+  var map = {};
+  App.BRANCHES.forEach(function (branch) {
+    var idx = -1;
+    for (var i = 0; i < normalized.length; i++) {
+      if (App.headerMatchesAny(normalized[i], branch.balanceAliases)) { idx = i; break; }
+    }
+    map[branch.key] = idx;
+  });
+  return map;
+};
+
 // يحاول مطابقة نص فرع (من عمود فرع في صيغة Pivot) لأحد الفروع المعروفة
 App.matchBranchByText = function (text) {
   var n = App.normalizeHeader(text);

@@ -7,12 +7,15 @@ window.App = window.App || {};
 // رموز الفروع وأسماؤها. هذا الترتيب (701/706/707/711/803) هو الترتيب الأساسي
 // المستخدم في الجداول (أعمدة ثابتة الهوية)؛ التقارير النصية تعيد ترتيب هذه
 // الفروع لكل موديل من الأكثر مبيعًا إلى الأقل (راجع report.js).
+// balanceAliases: عمود "الرصيد/المخزون" لكل فرع (اختياري). يُستخدم فقط لتمييز
+// "0 حبة" (الفرع يملك مخزونًا من هذا الموديل لكن مبيعاته صفر اليوم) عن
+// "غير موجود" (لا مخزون لهذا الموديل في هذا الفرع إطلاقًا). راجع report.js
 App.BRANCHES = [
-  { key: '701', name: 'الدائري', aliases: ['701soldqty', '701sold', '701qty', '701', 'الدائري', 'aldaeri', 'aldairi'] },
-  { key: '706', name: 'الفيحاء', aliases: ['706soldqty', '706sold', '706qty', '706', 'الفيحاء', 'alfayhaa', 'alfayha'] },
-  { key: '707', name: 'البديعة', aliases: ['707soldqty', '707sold', '707qty', '707', 'البديعة', 'albadiah', 'albadeah'] },
-  { key: '711', name: 'القصيم', aliases: ['711soldqty', '711sold', '711qty', '711', 'القصيم', 'alqassim', 'alqaseem'] },
-  { key: '803', name: 'التحلية', aliases: ['803soldqty', '803sold', '803qty', '803', 'التحلية', 'altahlia', 'altahliah'] },
+  { key: '701', name: 'الدائري', aliases: ['701soldqty', '701sold', '701qty', '701', 'الدائري', 'aldaeri', 'aldairi'], balanceAliases: ['701balance', '701bal', '701stock', 'رصيدالدائري'] },
+  { key: '706', name: 'الفيحاء', aliases: ['706soldqty', '706sold', '706qty', '706', 'الفيحاء', 'alfayhaa', 'alfayha'], balanceAliases: ['706balance', '706bal', '706stock', 'رصيدالفيحاء'] },
+  { key: '707', name: 'البديعة', aliases: ['707soldqty', '707sold', '707qty', '707', 'البديعة', 'albadiah', 'albadeah'], balanceAliases: ['707balance', '707bal', '707stock', 'رصيدالبديعة'] },
+  { key: '711', name: 'القصيم', aliases: ['711soldqty', '711sold', '711qty', '711', 'القصيم', 'alqassim', 'alqaseem'], balanceAliases: ['711balance', '711bal', '711stock', 'رصيدالقصيم'] },
+  { key: '803', name: 'التحلية', aliases: ['803soldqty', '803sold', '803qty', '803', 'التحلية', 'altahlia', 'altahliah'], balanceAliases: ['803balance', '803bal', '803stock', 'رصيدالتحلية'] },
 ];
 
 // أسماء الأعمدة المحتملة (عربي/إنجليزي) لكل حقل أساسي. المطابقة تتم بعد إزالة

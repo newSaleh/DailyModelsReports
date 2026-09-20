@@ -2,11 +2,23 @@ window.App = window.App || {};
 
 App.DIVIDER = '⸻';
 
-function branchLine(branch, value) {
-  var text = (value === undefined || value === null || Math.abs(value) < 0.005)
-    ? App.MODEL_NOT_FOUND_LABEL
-    : App.formatInt(value) + ' حبة';
-  return branch.name + ': ' + text;
+// "غير موجود" تعني أن الفرع لا يملك مخزونًا من هذا الموديل إطلاقًا؛ أما إن
+// كان هناك مخزون (رصيد > 0) لكن المبيعات صفر، فتُكتب "0" وليس "غير موجود".
+// بلا بيانات رصيد (عمود غير متوفر)، يبقى السلوك القديم: صفر = "غير موجود".
+function branchDisplay(item, branchKey) {
+  var qty = item.branchQty[branchKey];
+  if (qty !== undefined && qty !== null && Math.abs(qty) >= 0.005) {
+    return { text: App.formatInt(qty) + ' حبة', placeholder: false };
+  }
+  var balance = item.branchBalance ? item.branchBalance[branchKey] : undefined;
+  if (balance !== undefined && balance !== null && balance > 0.005) {
+    return { text: '0 حبة', placeholder: false };
+  }
+  return { text: App.MODEL_NOT_FOUND_LABEL, placeholder: true };
+}
+
+function branchLine(item, branch) {
+  return branch.name + ': ' + branchDisplay(item, branch.key).text;
 }
 
 // يرتّب الفروع لموديل واحد من الأكثر مبيعًا إلى الأقل بحسب الكمية (تفصيل
@@ -38,7 +50,7 @@ function buildEntry(item, index, mode) {
   lines.push('');
 
   sortedBranchesForItem(item).forEach(function (b) {
-    lines.push(branchLine(b, item.branchQty[b.key]));
+    lines.push(branchLine(item, b));
   });
 
   return lines.join('\n');
@@ -90,12 +102,12 @@ function buildTableRowHtml(item, index, mode) {
     ? App.formatInt(item.totalQty) + ' حبة'
     : App.formatMoney(item.totalSales) + ' ريال';
 
-  // تفصيل الفروع بالكمية دائمًا، حتى في تقرير مبلغ البيع
+  // تفصيل الفروع بالكمية دائمًا، حتى في تقرير مبلغ البيع. "غير موجود" فقط
+  // عند عدم وجود مخزون؛ صفر مع وجود مخزون يُكتب "0"
   var branchCells = App.BRANCHES.map(function (b) {
-    var value = item.branchQty[b.key];
-    var found = !(value === undefined || value === null || Math.abs(value) < 0.005);
-    var text = found ? App.formatInt(value) : App.MODEL_NOT_FOUND_LABEL;
-    return '<td class="p-td-num' + (found ? '' : ' p-td-empty') + '">' + App.escapeHtml(text) + '</td>';
+    var info = branchDisplay(item, b.key);
+    var text = info.placeholder ? App.MODEL_NOT_FOUND_LABEL : info.text.replace(' حبة', '');
+    return '<td class="p-td-num' + (info.placeholder ? ' p-td-empty' : '') + '">' + App.escapeHtml(text) + '</td>';
   }).join('');
 
   return '' +

@@ -24,6 +24,7 @@ App.analyze = function (rows2D, options) {
 
   var colMap = App.buildFieldColumnMap(headers);
   var branchColMap = App.buildBranchColumnMap(headers);
+  var branchBalanceColMap = App.buildBranchBalanceColumnMap(headers);
   var hasWideBranchCols = App.BRANCHES.some(function (b) { return branchColMap[b.key] !== -1; });
   var hasPivotBranch = !hasWideBranchCols && colMap.branchCol !== -1 && colMap.qtyTotal !== -1;
   var hasDateCol = colMap.date !== -1;
@@ -42,6 +43,7 @@ App.analyze = function (rows2D, options) {
         totalQty: 0,
         totalSales: 0,
         branchQty: {},
+        branchBalance: {},
         modelNameCounts: {},
         categoryCounts: {},
         priceCounts: {},
@@ -49,7 +51,7 @@ App.analyze = function (rows2D, options) {
         // إن لم يوجد كود) -> { qty, codes: {code: true}, nameQty: {name: qty} }
         supplierGroups: {},
       };
-      App.BRANCHES.forEach(function (b) { models[modelKey].branchQty[b.key] = 0; });
+      App.BRANCHES.forEach(function (b) { models[modelKey].branchQty[b.key] = 0; models[modelKey].branchBalance[b.key] = 0; });
     }
     return models[modelKey];
   }
@@ -105,6 +107,15 @@ App.analyze = function (rows2D, options) {
       // لا توجد معلومات فروع لهذا السطر إطلاقًا
     }
 
+    // ---- رصيد/مخزون كل فرع لهذا السطر (اختياري، لتمييز "0" عن "غير موجود") ----
+    var rowBranchBalance = {};
+    App.BRANCHES.forEach(function (b) {
+      var balIdx = branchBalanceColMap[b.key];
+      if (balIdx === -1) return;
+      var bv = App.toNumber(row[balIdx]);
+      rowBranchBalance[b.key] = bv === null ? 0 : bv;
+    });
+
     // ---- تحديد مبلغ البيع لهذا السطر ----
     var rowSalesTotal;
     var explicitSales = colMap.salesAmount !== -1 ? App.toNumber(row[colMap.salesAmount]) : null;
@@ -121,6 +132,9 @@ App.analyze = function (rows2D, options) {
     agg.totalSales += rowSalesTotal;
     Object.keys(rowBranchQty).forEach(function (k) {
       agg.branchQty[k] = (agg.branchQty[k] || 0) + rowBranchQty[k];
+    });
+    Object.keys(rowBranchBalance).forEach(function (k) {
+      agg.branchBalance[k] = (agg.branchBalance[k] || 0) + rowBranchBalance[k];
     });
 
     // مجموعة المورد: كودان لنفس المورد (فرع رياض/جدة، أو أي كودين يتشاركان
@@ -193,6 +207,7 @@ App.analyze = function (rows2D, options) {
       totalQty: agg.totalQty,
       totalSales: agg.totalSales,
       branchQty: agg.branchQty,
+      branchBalance: agg.branchBalance,
     };
   });
 
