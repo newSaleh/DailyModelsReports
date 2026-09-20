@@ -248,11 +248,29 @@ App.analyze = function (rows2D, options) {
     var supplierName = '';
     if (groupKeys.length > 0) {
       groupKeys.sort(function (a, b) { return agg.supplierGroups[b].qty - agg.supplierGroups[a].qty; });
-      var topGroup = agg.supplierGroups[groupKeys[0]];
+      var topGroupRoot = groupKeys[0];
+      var topGroup = agg.supplierGroups[topGroupRoot];
       var nameCandidates = Object.keys(topGroup.nameQty);
       nameCandidates.sort(function (a, b) { return topGroup.nameQty[b] - topGroup.nameQty[a]; });
       var topName = nameCandidates[0] || '';
-      var codes = Object.keys(topGroup.codes).sort();
+
+      // للموردين "المزدوجين" (كودان معروفان فأكثر لنفس المورد)، تُعرض كل
+      // أكوادهم دائمًا، حتى لو لم يبع أحدها هذا الموديل تحديدًا — بدل
+      // الاقتصار على الكود الذي باع هذا الموديل فقط
+      var knownCodes = App.supplierGroupAllCodes(topGroupRoot);
+      var codes;
+      if (knownCodes.length > 1) {
+        var seenRawByNormalized = {};
+        Object.keys(topGroup.codes).forEach(function (rawCode) {
+          seenRawByNormalized[App.normalizeSupplierCode(rawCode)] = rawCode;
+        });
+        codes = knownCodes.map(function (normCode) {
+          return seenRawByNormalized[normCode] || normCode.padStart(4, '0');
+        });
+      } else {
+        codes = Object.keys(topGroup.codes).sort();
+      }
+
       supplierName = topName + (codes.length ? ' (' + codes.join('/') + ')' : '');
     }
 

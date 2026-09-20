@@ -196,4 +196,18 @@ App.SUPPLIER_CODE_PAIRS = [
   App.supplierGroupRoot = function (normalizedCode) {
     return roots[normalizedCode] || normalizedCode;
   };
+
+  // كل الأكواد المعروفة (من قائمة الأسماء + جدول الأزواج) التي تنتمي لنفس
+  // جذر مجموعة مورد. تُستخدم لعرض كل أكواد المورد دائمًا (وليس فقط الكود
+  // الذي باع هذا الموديل تحديدًا)، خاصة للموردين "المزدوجين" (كودان فأكثر)
+  var rootToCodes = {};
+  Object.keys(roots).forEach(function (code) {
+    var root = roots[code];
+    if (!rootToCodes[root]) rootToCodes[root] = {};
+    rootToCodes[root][code] = true;
+  });
+  App.supplierGroupAllCodes = function (root) {
+    var set = rootToCodes[root];
+    return set ? Object.keys(set).sort() : [];
+  };
 })();
