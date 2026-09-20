@@ -175,6 +175,7 @@ App.analyze = function (rows2D, options) {
     var prices = Object.keys(agg.priceCounts).map(Number).filter(function (p) { return p > 0; });
     prices.sort(function (a, b) { return a - b; });
     var priceLine;
+    var priceVaries = prices.length > 1;
     if (prices.length === 0) {
       priceLine = 'السعر غير متوفر';
     } else if (prices.length === 1) {
@@ -203,6 +204,7 @@ App.analyze = function (rows2D, options) {
       modelCode: agg.modelCode,
       modelName: displayName,
       priceLine: priceLine,
+      priceVaries: priceVaries,
       supplierName: supplierName,
       totalQty: agg.totalQty,
       totalSales: agg.totalSales,

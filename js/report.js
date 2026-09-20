@@ -110,12 +110,21 @@ function buildTableRowHtml(item, index, mode) {
     return '<td class="p-td-num' + (info.placeholder ? ' p-td-empty' : '') + '">' + App.escapeHtml(text) + '</td>';
   }).join('');
 
+  // عمود السعر ضيق؛ عند اختلاف السعر تُكتب كلمة "مختلفة" كاملة بدل اختصار
+  // القائمة/الجملة الطويلة بـ"..."
+  var priceCellText = item.priceVaries ? 'مختلفة' : item.priceLine;
+
+  // كود الموديل نص لاتيني/رقمي داخل صف RTL؛ عزله بعلامتي اتجاه يونيكود
+  // (LRI/PDI) يضمن نسخ الأحرف بترتيبها الصحيح من عارضات PDF المختلفة، لا
+  // مجرد عرضه بصريًا بشكل صحيح
+  var isolatedCode = '⁦' + item.modelCode + '⁩';
+
   return '' +
     '<tr>' +
       '<td class="p-td-rank">' + (index + 1) + '</td>' +
-      '<td class="p-td-code">' + App.escapeHtml(item.modelCode) + '</td>' +
+      '<td class="p-td-code">' + App.escapeHtml(isolatedCode) + '</td>' +
       '<td>' + App.escapeHtml(item.modelName || '—') + '</td>' +
-      '<td>' + App.escapeHtml(item.priceLine) + '</td>' +
+      '<td>' + App.escapeHtml(priceCellText) + '</td>' +
       '<td>' + App.escapeHtml(item.supplierName || '—') + '</td>' +
       '<td class="p-td-num p-td-total">' + App.escapeHtml(totalText) + '</td>' +
       branchCells +

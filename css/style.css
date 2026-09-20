@@ -242,7 +242,7 @@ textarea {
 }
 
 .p-td-rank { width: 3.5%; text-align: center; }
-.p-td-code { font-weight: 700; direction: ltr; text-align: right; unicode-bidi: plaintext; }
+.p-td-code { font-weight: 700; direction: ltr; text-align: right; unicode-bidi: isolate; }
 .p-td-num { text-align: center; font-variant-numeric: tabular-nums; }
 .p-td-total { font-weight: 700; }
 .p-td-empty { font-style: italic; }
