@@ -4,17 +4,28 @@ App.DIVIDER = '⸻';
 
 // "غير موجود" تعني أن الفرع لا يملك مخزونًا من هذا الموديل إطلاقًا؛ أما إن
 // كان هناك مخزون (رصيد > 0) لكن المبيعات صفر، فتُكتب "0" وليس "غير موجود".
-// بلا بيانات رصيد (عمود غير متوفر)، يبقى السلوك القديم: صفر = "غير موجود".
-function branchDisplay(item, branchKey) {
+// نسخة خلية جدول PDF: سطران بكلمات كاملة، مثل "4 بيع" ثم "(الرصيد 22)" بخط
+// أصغر تحته، حفاظًا على وضوح القراءة مع بقاء الجدول في صفحة A4 واحدة عبر
+// تصغير الخط والمسافات لهذين السطرين تحديدًا. الأرصدة السالبة تُكتب كما هي
+// (بإشارة السالب) دون تعديل، وتُعزل أرقامها بعلامتي اتجاه يونيكود (LRI/PDI)
+// كي لا تنقلب إشارة السالب بصريًا داخل خلية بسياق RTL
+function branchCellHtml(item, branchKey) {
   var qty = item.branchQty[branchKey];
-  if (qty !== undefined && qty !== null && Math.abs(qty) >= 0.005) {
-    return { text: App.formatInt(qty) + ' حبة', placeholder: false };
-  }
+  var hasQty = qty !== undefined && qty !== null && Math.abs(qty) >= 0.005;
   var balance = item.branchBalance ? item.branchBalance[branchKey] : undefined;
-  if (balance !== undefined && balance !== null && balance > 0.005) {
-    return { text: '0 حبة', placeholder: false };
+  var hasBalanceData = balance !== undefined && balance !== null;
+
+  if (!hasQty && (!hasBalanceData || balance <= 0.005)) {
+    return { html: App.escapeHtml(App.MODEL_NOT_FOUND_LABEL), placeholder: true };
   }
-  return { text: App.MODEL_NOT_FOUND_LABEL, placeholder: true };
+
+  var qtyIsolated = '⁦' + App.formatInt(hasQty ? qty : 0) + '⁩';
+  var html = App.escapeHtml(qtyIsolated + ' بيع');
+  if (hasBalanceData) {
+    var balIsolated = '⁦' + App.formatInt(balance) + '⁩';
+    html += '<br><span class="p-td-balance">' + App.escapeHtml('(الرصيد ' + balIsolated + ')') + '</span>';
+  }
+  return { html: html, placeholder: false };
 }
 
 // نسخة النص القابل للنسخ تعرض دائمًا الكمية المباعة والرصيد المتبقي معًا
@@ -120,11 +131,11 @@ function buildTableRowHtml(item, index, mode) {
     : App.formatMoney(item.totalSales) + ' ريال';
 
   // تفصيل الفروع بالكمية دائمًا، حتى في تقرير مبلغ البيع. "غير موجود" فقط
-  // عند عدم وجود مخزون؛ صفر مع وجود مخزون يُكتب "0"
+  // عند عدم وجود مخزون؛ صفر مع وجود مخزون يُكتب "0"، ويظهر الرصيد المتبقي
+  // (إن توفرت بياناته) في سطر ثانٍ أصغر أسفل الكمية داخل نفس الخلية
   var branchCells = App.BRANCHES.map(function (b) {
-    var info = branchDisplay(item, b.key);
-    var text = info.placeholder ? App.MODEL_NOT_FOUND_LABEL : info.text.replace(' حبة', '');
-    return '<td class="p-td-num' + (info.placeholder ? ' p-td-empty' : '') + '">' + App.escapeHtml(text) + '</td>';
+    var info = branchCellHtml(item, b.key);
+    return '<td class="p-td-num p-td-branch' + (info.placeholder ? ' p-td-empty' : '') + '">' + info.html + '</td>';
   }).join('');
 
   // عمود السعر ضيق؛ عند اختلاف السعر تُكتب كلمة "مختلفة" كاملة بدل اختصار

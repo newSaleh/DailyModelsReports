@@ -275,27 +275,28 @@ textarea {
 }
 
 .p-title {
-  font-size: 18px;
-  margin: 0 0 14px;
+  font-size: 17px;
+  margin: 0 0 8px;
   border-bottom: 1.5px solid #000;
-  padding-bottom: 8px;
+  padding-bottom: 5px;
 }
 
 /* جدول مضغوط يجمع كل الموديلات (20) في صفحة A4 أفقية واحدة.
-   كل خلية سطر واحد بلا التفاف (مع اختصار "..." للنصوص الطويلة جدًا)
-   لضمان ارتفاع صف ثابت يتيح حساب أن الجدول كله يدخل في صفحة واحدة دائمًا. */
+   خلايا الفروع تعرض سطرين (كمية + رصيد)، وبقية الخلايا سطر واحد بلا التفاف
+   (مع اختصار "..." للنصوص الطويلة جدًا)، مع خط وحشوة مضغوطين لضمان دخول
+   الجدول كاملًا في صفحة واحدة رغم السطر الإضافي في أعمدة الفروع. */
 .p-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 12.5px;
-  line-height: 1.3;
+  font-size: 12px;
+  line-height: 1.25;
 }
 
 .p-table th,
 .p-table td {
   border: 0.5px solid #000;
-  padding: 6.5px 8px;
+  padding: 5px 8px;
   text-align: right;
   overflow: hidden;
   white-space: nowrap;
@@ -306,7 +307,8 @@ textarea {
   background: none;
   border-bottom: 1.5px solid #000;
   font-weight: 700;
-  font-size: 12.5px;
+  font-size: 11.5px;
+  padding: 4px 8px;
 }
 
 .p-td-rank { width: 3.5%; text-align: center; }
@@ -314,6 +316,12 @@ textarea {
 .p-td-num { text-align: center; font-variant-numeric: tabular-nums; }
 .p-td-total { font-weight: 700; }
 .p-td-empty { font-style: italic; }
+
+/* خلايا الفروع تعرض سطرين: الكمية المباعة، ثم الرصيد المتبقي بخط أصغر تحتها.
+   خط وارتفاع سطر مصغّران هنا تحديدًا لتعويض السطر الإضافي وإبقاء الجدول
+   بكامله في صفحة A4 واحدة */
+.p-td-branch { font-size: 9.5px; line-height: 1.1; padding-top: 3px; padding-bottom: 3px; }
+.p-td-balance { font-size: 7.5px; font-weight: 400; }
 
 /* أعمدة الجدول بالترتيب: # / الموديل / الاسم / السعر / المورد / الإجمالي / 5 فروع */
 .p-table th:nth-child(2), .p-table td:nth-child(2) { width: 11%; }
