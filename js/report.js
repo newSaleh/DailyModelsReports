@@ -17,8 +17,25 @@ function branchDisplay(item, branchKey) {
   return { text: App.MODEL_NOT_FOUND_LABEL, placeholder: true };
 }
 
+// نسخة النص القابل للنسخ تعرض دائمًا الكمية المباعة والرصيد المتبقي معًا
+// عند توفر بيانات الرصيد، مثل: "الدائري: 6 حبة بيع (الرصيد 9)"، بدل رقم
+// واحد فقط، ليعرف القارئ فورًا كمية البيع وما تبقى من مخزون في نفس الفرع
 function branchLine(item, branch) {
-  return branch.name + ': ' + branchDisplay(item, branch.key).text;
+  var qty = item.branchQty[branch.key];
+  var hasQty = qty !== undefined && qty !== null && Math.abs(qty) >= 0.005;
+  var balance = item.branchBalance ? item.branchBalance[branch.key] : undefined;
+  var hasBalanceData = balance !== undefined && balance !== null;
+
+  var text;
+  if (!hasQty && (!hasBalanceData || balance <= 0.005)) {
+    text = App.MODEL_NOT_FOUND_LABEL;
+  } else if (hasBalanceData) {
+    text = App.formatInt(hasQty ? qty : 0) + ' حبة بيع (الرصيد ' + App.formatInt(balance) + ')';
+  } else {
+    text = App.formatInt(qty) + ' حبة';
+  }
+
+  return branch.name + ': ' + text;
 }
 
 // يرتّب الفروع لموديل واحد من الأكثر مبيعًا إلى الأقل بحسب الكمية (تفصيل
