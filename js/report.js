@@ -125,10 +125,21 @@ App.buildNotesText = function (notes) {
 // ===== نسخة HTML مبسّطة لتصدير PDF (نص فقط، بدون صور، لأصغر حجم ممكن) =====
 // جدول واحد مضغوط يجمع كل الموديلات الـ20 في صفحة A4 واحدة (أفقية لاتساع أكبر).
 
-function buildTableRowHtml(item, index, mode) {
-  var totalText = mode === 'qty'
-    ? App.formatInt(item.totalQty) + ' حبة'
-    : App.formatMoney(item.totalSales) + ' ريال';
+// اسم المورد ينتهي دائمًا بكود/أكواد المورد بين قوسين، مثل "اتش آر ام (0666)".
+// هذا الجزء يُعرض بخط أصغر من اسم المورد نفسه لتقليل ثقله البصري والمساحة
+// التي يشغلها، مع بقاء الاسم هو العنصر الأبرز في الخلية
+function supplierCellHtml(supplierName) {
+  if (!supplierName) return App.escapeHtml('—');
+  var m = /^(.*?)(\s\([^)]*\))$/.exec(supplierName);
+  if (!m) return App.escapeHtml(supplierName);
+  return App.escapeHtml(m[1]) + '<span class="p-td-suppliercode">' + App.escapeHtml(m[2]) + '</span>';
+}
+
+function buildTableRowHtml(item, index) {
+  // عمود "الإجمالي" يعرض دائمًا مجموع الكمية المباعة في كل الفروع (حتى في
+  // تقرير مبلغ البيع)، ليطابق وحدة تفصيل الفروع المجاورة له (كمية دائمًا)
+  // بدل عرض مبلغ لا يمكن جمعه مباشرةً من الأعمدة الظاهرة
+  var totalText = App.formatInt(item.totalQty) + ' حبة';
 
   // تفصيل الفروع بالكمية دائمًا، حتى في تقرير مبلغ البيع. "غير موجود" فقط
   // عند عدم وجود مخزون؛ صفر مع وجود مخزون يُكتب "0"، ويظهر الرصيد المتبقي
@@ -153,7 +164,7 @@ function buildTableRowHtml(item, index, mode) {
       '<td class="p-td-code">' + App.escapeHtml(isolatedCode) + '</td>' +
       '<td>' + App.escapeHtml(item.modelName || '—') + '</td>' +
       '<td>' + App.escapeHtml(priceCellText) + '</td>' +
-      '<td>' + App.escapeHtml(item.supplierName || '—') + '</td>' +
+      '<td>' + supplierCellHtml(item.supplierName) + '</td>' +
       '<td class="p-td-num p-td-total">' + App.escapeHtml(totalText) + '</td>' +
       branchCells +
     '</tr>';
@@ -170,10 +181,15 @@ App.buildReportHTML = function (list, mode, dateDisplay) {
     return '<h1 class="p-title">' + App.escapeHtml(title) + '</h1><p class="p-empty">لا توجد بيانات مطابقة لهذا اليوم.</p>';
   }
 
-  var rows = list.map(function (item, i) { return buildTableRowHtml(item, i, mode); }).join('');
-  // في تقرير المبلغ يُضاف "(حبة)" لتوضيح أن أعمدة الفروع كمية وليست مبلغًا
-  var branchSuffix = mode === 'sales' ? ' (حبة)' : '';
-  var branchHeaders = App.BRANCHES.map(function (b) { return '<th>' + App.escapeHtml(b.name + branchSuffix) + '</th>'; }).join('');
+  var rows = list.map(function (item, i) { return buildTableRowHtml(item, i); }).join('');
+  // في تقرير المبلغ يُضاف "(حبة)" لتوضيح أن عمود الإجمالي وأعمدة الفروع كمية
+  // وليست مبلغًا رغم أن التقرير نفسه مرتّب حسب مبلغ البيع. يُغلَّف ضمن span
+  // مستقل كي يمكن إخفاؤه بـ CSS في الوضع الطولي المضغوط (50 موديلًا) حيث لا
+  // تتسع عناوين الأعمدة الضيقة لهذه الإضافة
+  var unitSuffix = mode === 'sales' ? ' <span class="p-th-suffix">(حبة)</span>' : '';
+  var branchHeaders = App.BRANCHES.map(function (b) {
+    return '<th>' + App.escapeHtml(b.name) + unitSuffix + '</th>';
+  }).join('');
 
   return '' +
     '<h1 class="p-title">' + App.escapeHtml(title) + '</h1>' +

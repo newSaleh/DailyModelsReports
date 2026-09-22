@@ -284,7 +284,7 @@
   function exportReportToPdf(reportKey) {
     if (!lastResult) return;
 
-    var html, fileTitle, pageCss;
+    var html, fileTitle, pageCss, isPortraitTable = false;
     if (reportKey === 'notes') {
       html = App.buildNotesHTML(lastResult.notes, lastDateDisplay);
       fileTitle = 'ملاحظات على البيانات ليوم ' + lastDateDisplay;
@@ -293,7 +293,14 @@
       var list = reportKey === 'qty' ? lastResult.qtyList : lastResult.salesList;
       html = App.buildReportHTML(list, reportKey, lastDateDisplay);
       fileTitle = App.reportTitle(list, reportKey, lastDateDisplay);
-      pageCss = '@page { size: A4 landscape; margin: 10mm; }';
+      // الجدول الأفقي (Landscape) أوضح وأعرض للأعمدة، ونحتفظ به طالما عدد
+      // الموديلات يدخل فيه بخط مريح؛ إن تجاوز العدد ذلك (مثلًا 50 موديلًا)
+      // نتحول تلقائيًا للوضع الطولي (Portrait) الذي يمنح ارتفاعًا أكبر يتسع
+      // لعدد أكبر من الصفوف في صفحة A4 واحدة
+      isPortraitTable = list && list.length > App.MAX_LANDSCAPE_ROWS;
+      pageCss = isPortraitTable
+        ? '@page { size: A4 portrait; margin: 8mm; }'
+        : '@page { size: A4 landscape; margin: 10mm; }';
     }
 
     printArea.innerHTML = html;
@@ -301,9 +308,11 @@
     var previousTitle = document.title;
     document.title = fileTitle;
     document.body.classList.add('printing');
+    if (isPortraitTable) document.body.classList.add('printing-portrait-table');
 
     function cleanup() {
       document.body.classList.remove('printing');
+      document.body.classList.remove('printing-portrait-table');
       document.title = previousTitle;
       printArea.innerHTML = '';
       dynamicPrintStyle.textContent = '';

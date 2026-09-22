@@ -35,3 +35,8 @@ App.FIELD_ALIASES = {
 };
 
 App.MODEL_NOT_FOUND_LABEL = 'غير موجود';
+
+// أقصى عدد موديلات يبقى فيه تصدير PDF بالوضع الأفقي (Landscape) مريحًا في
+// صفحة A4 واحدة؛ أي عدد أكبر (مثلًا 50) يتحول تلقائيًا للوضع الطولي
+// (Portrait) الذي يمنح ارتفاعًا أكبر. راجع js/app.js
+App.MAX_LANDSCAPE_ROWS = 20;

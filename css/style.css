@@ -324,21 +324,75 @@ textarea {
 .p-td-total { font-weight: 700; }
 .p-td-empty { font-style: italic; }
 
+/* كود/أكواد المورد بين قوسين في نهاية عمود المورد، بخط أصغر من اسمه */
+.p-td-suppliercode { font-size: 0.82em; }
+
 /* خلايا الفروع تعرض سطرين: الكمية المباعة، ثم الرصيد المتبقي بخط أصغر تحتها.
    خط وارتفاع سطر مصغّران هنا تحديدًا لتعويض السطر الإضافي وإبقاء الجدول
    بكامله في صفحة A4 واحدة */
 .p-td-branch { font-size: 9.5px; line-height: 1.1; padding-top: 3px; padding-bottom: 3px; }
 .p-td-balance { font-size: 7.5px; font-weight: 400; }
 
-/* أعمدة الجدول بالترتيب: # / الموديل / الاسم / السعر / المورد / الإجمالي / 5 فروع */
-.p-table th:nth-child(2), .p-table td:nth-child(2) { width: 11%; }
-.p-table th:nth-child(3), .p-table td:nth-child(3) { width: 10%; }
+/* أعمدة الجدول بالترتيب: # / الموديل / الاسم / السعر / المورد / الإجمالي / 5 فروع.
+   عمود الإجمالي أصبح دائمًا كمية قصيرة ("N حبة") بدل مبلغ أطول، فحصته أضيق
+   من السابق، والفرق أُعطي لعمود "البيان" (الاسم) لتقليل اقتطاعه */
+.p-table th:nth-child(2), .p-table td:nth-child(2) { width: 10%; }
+.p-table th:nth-child(3), .p-table td:nth-child(3) { width: 13.5%; }
 .p-table th:nth-child(4), .p-table td:nth-child(4) { width: 6.5%; }
 .p-table th:nth-child(5), .p-table td:nth-child(5) { width: 17.5%; }
-.p-table th:nth-child(6), .p-table td:nth-child(6) { width: 8.5%; }
+.p-table th:nth-child(6), .p-table td:nth-child(6) { width: 6%; }
 .p-table th:nth-child(n+7), .p-table td:nth-child(n+7) { width: 8.6%; }
 
 .p-table tbody tr { break-inside: avoid; page-break-inside: avoid; }
+
+/* ===== الوضع الطولي (Portrait) لجدول PDF عند تجاوز عدد الموديلات
+   App.MAX_LANDSCAPE_ROWS (مثلًا 50 موديلًا): عرض الصفحة أضيق من الأفقي، لذا
+   الأعمدة النصية (الموديل/المورد) تأخذ نسبة أكبر من العرض على حساب أعمدة
+   الفروع الأضيق محتوى. سطر الرصيد أسفل كل خلية فرع (p-td-balance) يُخفى هنا
+   تحديدًا (لا في الوضع الأفقي المعتاد) لأن إبقاءه مع 50 صفًا يفرض خطًا صغيرًا
+   جدًا يصعب قراءته؛ حذفه يتيح خطًا أكبر وأوضح بكثير لعرض الكمية فقط لكل فرع،
+   وهو ما اختاره المستخدم صراحة بعد مراجعة تصميمين */
+body.printing-portrait-table .p-title {
+  font-size: 13px;
+  margin: 0 0 4px;
+  padding-bottom: 3px;
+}
+
+body.printing-portrait-table .p-table {
+  font-size: 10.5px;
+  line-height: 1.2;
+}
+
+body.printing-portrait-table .p-table th,
+body.printing-portrait-table .p-table td {
+  padding: 3px 5px;
+}
+
+body.printing-portrait-table .p-table thead th {
+  font-size: 9.5px;
+  padding: 3px 4px;
+}
+
+body.printing-portrait-table .p-td-branch {
+  font-size: 11px;
+  line-height: 1.2;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+body.printing-portrait-table .p-td-balance { display: none; }
+
+/* "(حبة)" بجانب عناوين أعمدة الفروع (تقرير المبلغ) تُخفى هنا تحديدًا؛ عرض
+   العمود الضيق في الوضع الطولي لا يتسع لها، وأرقام الفروع نفسها (كمية دائمًا)
+   واضحة بلا الحاجة لتكرار التوضيح في كل عنوان */
+body.printing-portrait-table .p-th-suffix { display: none; }
+
+body.printing-portrait-table .p-table th:nth-child(2), body.printing-portrait-table .p-table td:nth-child(2) { width: 12.5%; }
+body.printing-portrait-table .p-table th:nth-child(3), body.printing-portrait-table .p-table td:nth-child(3) { width: 11.5%; }
+body.printing-portrait-table .p-table th:nth-child(4), body.printing-portrait-table .p-table td:nth-child(4) { width: 7%; }
+body.printing-portrait-table .p-table th:nth-child(5), body.printing-portrait-table .p-table td:nth-child(5) { width: 19%; }
+body.printing-portrait-table .p-table th:nth-child(6), body.printing-portrait-table .p-table td:nth-child(6) { width: 7%; }
+body.printing-portrait-table .p-table th:nth-child(n+7), body.printing-portrait-table .p-table td:nth-child(n+7) { width: 8%; }
 
 .p-notes-list {
   margin: 0;
