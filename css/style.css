@@ -302,7 +302,10 @@ textarea {
 
 .p-table th,
 .p-table td {
-  border: 0.5px solid #000;
+  /* 1px بدل 0.5px: الحدود شبه-البكسل قد تختفي في بعض الخلايا (خاصة أعمدة
+     الأرقام) عند تحويل الصفحة إلى PDF بسبب تقريب الدقة، فيبدو كأن الخلية
+     بلا حدّ من جهة */
+  border: 1px solid #000;
   padding: 5px 8px;
   text-align: right;
   overflow: hidden;
