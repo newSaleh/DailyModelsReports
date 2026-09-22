@@ -12,6 +12,12 @@
   var supplierSearchInput = document.getElementById('supplierSearchInput');
   var selectAllSuppliersBtn = document.getElementById('selectAllSuppliersBtn');
   var supplierCheckList = document.getElementById('supplierCheckList');
+  var categoryDropdownToggle = document.getElementById('categoryDropdownToggle');
+  var categoryDropdownToggleText = document.getElementById('categoryDropdownToggleText');
+  var categoryDropdownPanel = document.getElementById('categoryDropdownPanel');
+  var categorySearchInput = document.getElementById('categorySearchInput');
+  var selectAllCategoriesBtn = document.getElementById('selectAllCategoriesBtn');
+  var categoryCheckList = document.getElementById('categoryCheckList');
   var analyzeBtn = document.getElementById('analyzeBtn');
   var statusMsg = document.getElementById('statusMsg');
   var resultsSection = document.getElementById('resultsSection');
@@ -125,6 +131,96 @@
     updateSupplierToggleText();
   });
 
+  // ===== قائمة اختيار الأصناف (البيان) =====
+  // عكس منطق قائمة الموردين عمدًا: هنا الافتراضي "الكل محدد" (كل صندوق
+  // اختيار مؤشَّر عليه)، وإلغاء التأشير على صنف يستبعده من التحليل. تُحفظ
+  // الأصناف المستبعدة فقط (excludedCategories)، لا المحددة
+  var categoryDirectory = []; // [string]
+  var allCategoriesSelected = true;
+  var excludedCategories = {}; // category -> true
+
+  function updateCategoryToggleText() {
+    if (allCategoriesSelected) {
+      categoryDropdownToggleText.textContent = 'كل الأصناف';
+      return;
+    }
+    var excludedCount = Object.keys(excludedCategories).length;
+    var selectedCount = categoryDirectory.length - excludedCount;
+    categoryDropdownToggleText.textContent = selectedCount + ' من ' + categoryDirectory.length + ' صنفًا محددة';
+  }
+
+  function renderCategoryCheckList() {
+    categoryCheckList.innerHTML = '';
+    if (categoryDirectory.length === 0) {
+      var p = document.createElement('p');
+      p.className = 'hint';
+      p.textContent = 'لا يوجد عمود صنف/فئة في البيانات المدخلة، أو لم تُرفع بيانات بعد.';
+      categoryCheckList.appendChild(p);
+      return;
+    }
+    categoryDirectory.forEach(function (cat) {
+      var label = document.createElement('label');
+      label.className = 'supplier-check-item';
+      label.dataset.search = cat.toLowerCase();
+
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = cat;
+      cb.checked = !excludedCategories[cat];
+
+      var span = document.createElement('span');
+      span.textContent = cat;
+
+      cb.addEventListener('change', function () {
+        if (cb.checked) delete excludedCategories[cat];
+        else excludedCategories[cat] = true;
+        allCategoriesSelected = Object.keys(excludedCategories).length === 0;
+        updateCategoryToggleText();
+      });
+
+      label.appendChild(cb);
+      label.appendChild(span);
+      categoryCheckList.appendChild(label);
+    });
+  }
+
+  function refreshCategoryList() {
+    var rows2D = getRows2D();
+    categoryDirectory = rows2D ? App.buildCategoryDirectory(rows2D) : [];
+    allCategoriesSelected = true;
+    excludedCategories = {};
+    categorySearchInput.value = '';
+    renderCategoryCheckList();
+    updateCategoryToggleText();
+  }
+
+  categoryDropdownToggle.addEventListener('click', function () {
+    var isHidden = categoryDropdownPanel.classList.toggle('hidden');
+    categoryDropdownToggle.setAttribute('aria-expanded', String(!isHidden));
+  });
+
+  document.addEventListener('click', function (e) {
+    if (categoryDropdownPanel.classList.contains('hidden')) return;
+    if (categoryDropdownPanel.contains(e.target) || categoryDropdownToggle.contains(e.target)) return;
+    categoryDropdownPanel.classList.add('hidden');
+    categoryDropdownToggle.setAttribute('aria-expanded', 'false');
+  });
+
+  categorySearchInput.addEventListener('input', function () {
+    var q = categorySearchInput.value.trim().toLowerCase();
+    Array.prototype.forEach.call(categoryCheckList.querySelectorAll('.supplier-check-item'), function (item) {
+      var haystack = item.dataset.search || '';
+      item.classList.toggle('no-match', q !== '' && haystack.indexOf(q) === -1);
+    });
+  });
+
+  selectAllCategoriesBtn.addEventListener('click', function () {
+    allCategoriesSelected = true;
+    excludedCategories = {};
+    Array.prototype.forEach.call(categoryCheckList.querySelectorAll('input[type="checkbox"]'), function (el) { el.checked = true; });
+    updateCategoryToggleText();
+  });
+
   // التاريخ الافتراضي = اليوم
   (function initDate() {
     var today = new Date();
@@ -164,6 +260,7 @@
         }
         setStatus('تم تحميل الملف بنجاح (' + names.length + ' ورقة). اضغط "تحليل المبيعات" للمتابعة.', false);
         refreshSupplierList();
+        refreshCategoryList();
       } catch (err) {
         workbook = null;
         setStatus('تعذّر قراءة ملف Excel: ' + err.message, true);
@@ -192,12 +289,18 @@
     return null;
   }
 
-  sheetSelect.addEventListener('change', refreshSupplierList);
+  sheetSelect.addEventListener('change', function () {
+    refreshSupplierList();
+    refreshCategoryList();
+  });
 
   var pasteRefreshTimer = null;
   pasteArea.addEventListener('input', function () {
     clearTimeout(pasteRefreshTimer);
-    pasteRefreshTimer = setTimeout(refreshSupplierList, 400);
+    pasteRefreshTimer = setTimeout(function () {
+      refreshSupplierList();
+      refreshCategoryList();
+    }, 400);
   });
 
   analyzeBtn.addEventListener('click', function () {
@@ -216,6 +319,7 @@
       return;
     }
     var supplierFilter = allSuppliersSelected ? null : Object.keys(selectedSupplierRoots);
+    var categoryFilter = allCategoriesSelected ? null : categoryDirectory.filter(function (c) { return !excludedCategories[c]; });
 
     analyzeBtn.disabled = true;
     setStatus('جارٍ التحليل، قد يستغرق ذلك بضع ثوانٍ مع الملفات الكبيرة...', false);
@@ -224,7 +328,7 @@
     // تأجيل بسيط للسماح للواجهة بتحديث حالة "جارٍ التحليل" قبل المعالجة الثقيلة
     setTimeout(function () {
       try {
-        var result = App.analyze(rows2D, { selectedDateKey: dateInput.value, topN: topN, supplierFilter: supplierFilter });
+        var result = App.analyze(rows2D, { selectedDateKey: dateInput.value, topN: topN, supplierFilter: supplierFilter, categoryFilter: categoryFilter });
         if (result.error) {
           setStatus(result.error, true);
           analyzeBtn.disabled = false;

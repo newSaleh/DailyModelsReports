@@ -49,6 +49,26 @@ App.buildSupplierDirectory = function (rows2D) {
 };
 
 /**
+ * يبني قائمة الأصناف المتاحة في البيانات (عمود الفئة/التصنيف، وهو نفسه
+ * مصدر عمود "البيان" حين لا يوجد عمود اسم موديل منفصل) لتعبئة قائمة فلترة
+ * الأصناف. تُعاد مرتّبة أبجديًا، بلا تكرار.
+ */
+App.buildCategoryDirectory = function (rows2D) {
+  if (!rows2D || rows2D.length < 2) return [];
+  var headers = rows2D[0];
+  var colMap = App.buildFieldColumnMap(headers);
+  if (colMap.category === -1) return [];
+
+  var dataRows = rows2D.slice(1);
+  var seen = {};
+  for (var r = 0; r < dataRows.length; r++) {
+    var category = App.trimOrEmpty(dataRows[r][colMap.category]);
+    if (category) seen[category] = true;
+  }
+  return Object.keys(seen).sort(function (a, b) { return a.localeCompare(b, 'ar'); });
+};
+
+/**
  * يحلل مصفوفة صفوف (أول صف = عناوين) ويعيد تقريرين (كمية / مبلغ).
  * المفتاح الأساسي للتجميع هو ModelCode فقط، بغض النظر عن SupplierCode.
  */
@@ -66,6 +86,14 @@ App.analyze = function (rows2D, options) {
   if (options.supplierFilter) {
     supplierFilterSet = {};
     options.supplierFilter.forEach(function (root) { supplierFilterSet[root] = true; });
+  }
+
+  // فلترة اختيارية حسب صنف واحد أو أكثر (عمود الفئة/التصنيف). نفس قواعد
+  // supplierFilter: null = كل الأصناف، مصفوفة فارغة = لا صنف محدد عمدًا
+  var categoryFilterSet = null;
+  if (options.categoryFilter) {
+    categoryFilterSet = {};
+    options.categoryFilter.forEach(function (c) { categoryFilterSet[c] = true; });
   }
 
   if (!rows2D || rows2D.length < 2) {
@@ -129,13 +157,15 @@ App.analyze = function (rows2D, options) {
     var resolvedSupplier = App.resolveSupplierGroup(supplierCode, supplierName);
     if (supplierFilterSet && !supplierFilterSet[resolvedSupplier.root]) continue;
 
+    var category = colMap.category !== -1 ? App.trimOrEmpty(row[colMap.category]) : '';
+    if (categoryFilterSet && !categoryFilterSet[category]) continue;
+
     var modelKey = modelCodeRaw.toUpperCase();
     var agg = getAgg(modelKey, modelCodeRaw);
 
     var modelName = colMap.modelName !== -1 ? App.trimOrEmpty(row[colMap.modelName]) : '';
     if (modelName) agg.modelNameCounts[modelName] = (agg.modelNameCounts[modelName] || 0) + 1;
 
-    var category = colMap.category !== -1 ? App.trimOrEmpty(row[colMap.category]) : '';
     if (category) agg.categoryCounts[category] = (agg.categoryCounts[category] || 0) + 1;
 
     var unitPrice = colMap.unitPrice !== -1 ? App.toNumber(row[colMap.unitPrice]) : null;

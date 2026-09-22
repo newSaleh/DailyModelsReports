@@ -71,6 +71,27 @@
     </section>
 
     <section class="card">
+      <h2>٤. الأصناف (البيان)</h2>
+      <div class="field">
+        <label id="categoryFilterLabel" for="categoryDropdownToggle">الأصناف</label>
+        <button type="button" id="categoryDropdownToggle" class="dropdown-toggle" aria-expanded="false">
+          <span id="categoryDropdownToggleText">كل الأصناف</span>
+          <span class="dropdown-caret">▾</span>
+        </button>
+        <div id="categoryDropdownPanel" class="dropdown-panel hidden">
+          <input type="text" id="categorySearchInput" placeholder="ابحث عن صنف...">
+          <div class="dropdown-actions">
+            <button type="button" id="selectAllCategoriesBtn">تحديد الكل (كل الأصناف)</button>
+          </div>
+          <div id="categoryCheckList" class="supplier-check-list">
+            <p class="hint">ارفع البيانات أولًا لعرض قائمة الأصناف.</p>
+          </div>
+        </div>
+      </div>
+      <p class="hint">افتراضيًا كل الأصناف محددة (مُضمَّنة). اضغط "تحديد الكل" ثم ألغِ علامة الأصناف التي لا تريد تضمينها في التحليل.</p>
+    </section>
+
+    <section class="card">
       <button id="analyzeBtn" class="primary-btn">تحليل المبيعات</button>
       <p id="statusMsg" class="status"></p>
     </section>
