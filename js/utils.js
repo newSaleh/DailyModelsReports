@@ -87,11 +87,18 @@ App.parseDateKey = function (v) {
   return null;
 };
 
-// تحويل قيمة input[type=date] (YYYY-MM-DD) إلى تاريخ عرض DD/MM/YYYY
+var WEEKDAY_NAMES_AR = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+// تحويل قيمة input[type=date] (YYYY-MM-DD) إلى تاريخ عرض "اسم اليوم DD/MM/YYYY".
+// تُبنى القيمة كتاريخ محلي من الأجزاء الرقمية مباشرة (لا من نص ISO) تفاديًا
+// لانزياح اسم اليوم بيوم كامل بسبب فرق التوقيت بين UTC والمنطقة المحلية
 App.dateInputToDisplay = function (isoStr) {
   var parts = isoStr.split('-');
   if (parts.length !== 3) return isoStr;
-  return parts[2] + '/' + parts[1] + '/' + parts[0];
+  var dmy = parts[2] + '/' + parts[1] + '/' + parts[0];
+  var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+  if (isNaN(d.getTime())) return dmy;
+  return WEEKDAY_NAMES_AR[d.getDay()] + ' ' + dmy;
 };
 
 // توحيد كود المورد للمطابقة مع App.SUPPLIER_ALIASES: إزالة المسافات، تحويل
