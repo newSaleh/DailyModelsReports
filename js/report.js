@@ -84,13 +84,8 @@ function buildEntry(item, index, mode) {
   return lines.join('\n');
 }
 
-// العدد الظاهر في العنوان هو عدد الموديلات الفعلي في القائمة (قد يكون أقل
-// من العدد المطلوب إن لم تتوفر بيانات كافية)
 App.reportTitle = function (list, mode, dateDisplay) {
-  var n = list ? list.length : 0;
-  return mode === 'qty'
-    ? 'أكثر ' + n + ' موديل بيعًا (كمية) ليوم ' + dateDisplay
-    : 'أكثر ' + n + ' موديل بيعًا (مبلغ البيع) ليوم ' + dateDisplay;
+  return 'أكثر الموديلات نجاحًا ليوم ' + dateDisplay;
 };
 
 /**

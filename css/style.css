@@ -278,6 +278,9 @@ textarea {
     background: #fff;
     font-size: 11.5px;
     line-height: 1.5;
+    /* حشوة بسيطة كي لا يلامس حدّ الجدول الخارجي حافة الصفحة تمامًا؛ حدّ
+       يقع بالضبط على تلك الحافة قد يُقصّ جزئيًا عند بعض محركات تصدير PDF */
+    padding: 2px;
   }
 }
 
@@ -390,7 +393,7 @@ body.printing-portrait-table .p-td-balance { display: none; }
    واضحة بلا الحاجة لتكرار التوضيح في كل عنوان */
 body.printing-portrait-table .p-th-suffix { display: none; }
 
-body.printing-portrait-table .p-table th:nth-child(2), body.printing-portrait-table .p-table td:nth-child(2) { width: 12.5%; }
+body.printing-portrait-table .p-table th:nth-child(2), body.printing-portrait-table .p-table td:nth-child(2) { width: 12%; }
 body.printing-portrait-table .p-table th:nth-child(3), body.printing-portrait-table .p-table td:nth-child(3) { width: 11.5%; }
 body.printing-portrait-table .p-table th:nth-child(4), body.printing-portrait-table .p-table td:nth-child(4) { width: 7%; }
 body.printing-portrait-table .p-table th:nth-child(5), body.printing-portrait-table .p-table td:nth-child(5) { width: 19%; }
