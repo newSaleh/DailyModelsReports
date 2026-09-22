@@ -25,7 +25,7 @@ App.FIELD_ALIASES = {
   supplierName: ['suppliername', 'supplier_name', 'اسمالمورد', 'المورد'],
   modelCode: ['modelcode', 'model_code', 'كودالموديل', 'رقمالموديل', 'الموديلكود', 'modelno'],
   modelName: ['modelname', 'model_name', 'اسمالموديل', 'وصفالموديل', 'modeldesc', 'modeldescription'],
-  category: ['stockgroupname', 'stockgroup', 'category', 'الفئة', 'التصنيف', 'المجموعة'],
+  category: ['stockgroupname', 'stockgroup', 'category', 'الفئة', 'التصنيف', 'المجموعة', 'البيان'],
   stockCode: ['stockcode', 'sku', 'الصنف', 'كودالصنف'],
   unitPrice: ['unitprice', 'unit_price', 'price', 'سعر', 'السعر', 'سعرالوحدة', 'سعرالبيع'],
   qtyTotal: ['totalqtysold', 'totalqty', 'total_qty', 'qty', 'quantity', 'الكمية', 'كمية', 'الكميةالمباعة'],
