@@ -68,6 +68,54 @@ App.buildCategoryDirectory = function (rows2D) {
   return Object.keys(seen).sort(function (a, b) { return a.localeCompare(b, 'ar'); });
 };
 
+// موردان يُحتسبان كمورد واحد لغرض هذا الترتيب فقط (لا يغيّر اسم المورد
+// المعروض ولا يدمجهما في باقي التطبيق) — بناءً على طلب صريح من المستخدم
+var SALES_SORT_SUPPLIER_ALIAS = { '999': '666' };
+
+function salesSortSupplierKey(supplierRoot) {
+  var root = supplierRoot || '';
+  return SALES_SORT_SUPPLIER_ALIAS[root] || root;
+}
+
+// يحدد "القسم" (رجالي/نسائي/ولادي/بناتي/أطفال ومواليد/أخرى) من نص البيان،
+// بالبحث عن أول كلمة مفتاحية مطابقة بحسب ترتيب الأولوية أدناه
+var DEPARTMENT_KEYWORDS = ['رجالي', 'نسائي', 'ولادي', 'بناتي'];
+function departmentOrder(modelName) {
+  var t = modelName || '';
+  for (var i = 0; i < DEPARTMENT_KEYWORDS.length; i++) {
+    if (t.indexOf(DEPARTMENT_KEYWORDS[i]) !== -1) return i;
+  }
+  if (t.indexOf('اطفال') !== -1 || t.indexOf('أطفال') !== -1 || t.indexOf('مواليد') !== -1) return DEPARTMENT_KEYWORDS.length;
+  return DEPARTMENT_KEYWORDS.length + 1; // أخرى
+}
+
+/**
+ * يعيد ترتيب عرض تقرير "الأكثر نجاحًا" (بعد اختيار أفضل topN موديل بالمبلغ)
+ * حسب المورد أولًا (بترتيب ظهور أول مورد في القائمة الأصلية المرتّبة بالمبلغ)،
+ * ثم القسم ثانيًا (رجالي/نسائي/ولادي/بناتي/أطفال ومواليد/أخرى)، مع بقاء
+ * الترتيب الأصلي (الأعلى مبيعًا أولًا) كمرجّح ثابت عند تساوي المورد والقسم.
+ * هذا ترتيب عرض فقط؛ لا يغيّر اختيار الموديلات الـtopN نفسها.
+ */
+App.groupSalesListBySupplierAndDepartment = function (salesList) {
+  var supplierFirstSeen = {};
+  salesList.forEach(function (m, i) {
+    var key = salesSortSupplierKey(m.supplierRoot);
+    if (!(key in supplierFirstSeen)) supplierFirstSeen[key] = i;
+  });
+
+  return salesList
+    .map(function (m, i) { return { m: m, i: i }; })
+    .sort(function (a, b) {
+      var firstA = supplierFirstSeen[salesSortSupplierKey(a.m.supplierRoot)];
+      var firstB = supplierFirstSeen[salesSortSupplierKey(b.m.supplierRoot)];
+      if (firstA !== firstB) return firstA - firstB;
+      var deptA = departmentOrder(a.m.modelName), deptB = departmentOrder(b.m.modelName);
+      if (deptA !== deptB) return deptA - deptB;
+      return a.i - b.i;
+    })
+    .map(function (x) { return x.m; });
+};
+
 /**
  * يحلل مصفوفة صفوف (أول صف = عناوين) ويعيد تقريرين (كمية / مبلغ).
  * المفتاح الأساسي للتجميع هو ModelCode فقط، بغض النظر عن SupplierCode.
@@ -310,6 +358,7 @@ App.analyze = function (rows2D, options) {
       priceLine: priceLine,
       priceVaries: priceVaries,
       supplierName: supplierName,
+      supplierRoot: groupKeys.length > 0 ? topGroupRoot : '',
       totalQty: agg.totalQty,
       totalSales: agg.totalSales,
       branchQty: agg.branchQty,
@@ -319,6 +368,7 @@ App.analyze = function (rows2D, options) {
 
   var qtyList = finalModels.slice().sort(function (a, b) { return b.totalQty - a.totalQty; }).slice(0, topN);
   var salesList = finalModels.slice().sort(function (a, b) { return b.totalSales - a.totalSales; }).slice(0, topN);
+  salesList = App.groupSalesListBySupplierAndDepartment(salesList);
 
   // ---- ملاحظات: تُبنى فقط للموديلات الظاهرة فعليًا في التقريرين، لتشرح
   // مباشرة أي شيء غريب يراه المستخدم (سعر غير موحّد، اسم مختلف، كود مرتبط
