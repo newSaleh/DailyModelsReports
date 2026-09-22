@@ -85,7 +85,9 @@ function buildEntry(item, index, mode) {
 }
 
 App.reportTitle = function (list, mode, dateDisplay) {
-  return 'أكثر الموديلات نجاحًا ليوم ' + dateDisplay;
+  return mode === 'qty'
+    ? 'أكثر الموديلات مبيعًا (كمية) ليوم ' + dateDisplay
+    : 'أكثر الموديلات نجاحًا ليوم ' + dateDisplay;
 };
 
 /**
