@@ -256,6 +256,13 @@ textarea {
      حسب نوع التقرير عبر #dynamicPrintStyle */
   @page { size: A4; margin: 12mm; }
 
+  /* خلفية الصفحة نفسها بيضاء دائمًا؛ بدون هذا يبقى لون خلفية الواجهة الرمادي
+     (var(--bg)) ظاهرًا في أي جزء من الصفحة يقع بعد نهاية محتوى #printArea
+     (مثلًا المساحة الفارغة أسفل الجدول عند انتهائه قبل نهاية الصفحة) */
+  html, body {
+    background: #fff !important;
+  }
+
   body.printing #printArea {
     display: block !important;
   }
